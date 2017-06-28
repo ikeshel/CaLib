@@ -2031,6 +2031,32 @@ Int_t TCMySQLManager::RemoveAllCalibrations(const Char_t* calibration)
 }
 
 //______________________________________________________________________________
+Bool_t TCMySQLManager::RemoveAllRuns()
+{
+    // Remove all runs from the database.
+
+    TString query;
+
+    // create the query
+    query.Form("DELETE FROM %s", TCConfig::kCalibMainTableName);
+
+    // read from database
+    Bool_t res = SendExec(query.Data());
+
+    // check result
+    if (!res)
+    {
+        if (!fSilence) Error("RemoveAllRuns", "Could not remove all runs!");
+        return kFALSE;
+    }
+    else
+    {
+        if (!fSilence) Info("RemoveAllRuns", "Removed all runs");
+        return kTRUE;
+    }
+}
+
+//______________________________________________________________________________
 void TCMySQLManager::AddCalibAR(CalibDetector_t det, const Char_t* calibFileAR,
                                 const Char_t* calib, const Char_t* desc,
                                 Int_t first_run, Int_t last_run)

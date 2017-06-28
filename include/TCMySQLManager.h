@@ -135,6 +135,7 @@ public:
     Bool_t ChangeCalibrationDescription(const Char_t* calibration, const Char_t* newDesc);
     Bool_t RemoveCalibration(const Char_t* calibration, const Char_t* data);
     Int_t RemoveAllCalibrations(const Char_t* calibration);
+    Bool_t RemoveAllRuns();
 
     Bool_t AddSet(const Char_t* type, const Char_t* calibration, const Char_t* desc,
                   Int_t first_run, Int_t last_run, Double_t par);
