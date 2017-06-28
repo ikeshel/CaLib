@@ -2022,6 +2022,67 @@ void DeleteCalibration()
 }
 
 //______________________________________________________________________________
+void RemoveAllRuns()
+{
+    // Remove all runs.
+
+    Char_t answer[16];
+
+    // clear the screen
+    clear();
+
+    // echo input
+    echo();
+
+    // draw header
+    DrawHeader();
+
+    // draw title
+    attron(A_UNDERLINE);
+    mvprintw(4, 2, "REMOVE ALL RUNS");
+    attroff(A_UNDERLINE);
+
+    // ask confirmation
+    mvprintw(6, 2, "Removing all runs");
+    mvprintw(8, 6, "Are you sure to continue? (yes/no) : ");
+    scanw((Char_t*)"%s", answer);
+    if (strcmp(answer, "yes"))
+    {
+        mvprintw(10, 2, "Aborted.");
+    }
+    else
+    {
+        // delete calibration
+        Bool_t ret = TCMySQLManager::GetManager()->RemoveAllRuns();
+
+        // check return value
+        if (ret)
+            mvprintw(10, 2, "Removed all runs");
+        else
+            mvprintw(10, 2, "There was an error during removing all runs!");
+    }
+
+    // user information
+    PrintStatusMessage("Hit ESC or 'q' to exit");
+
+    // wait for input
+    for (;;)
+    {
+        // get key
+        Int_t c = getch();
+
+        // leave loop
+        if (c == KEY_ESC || c == 'q') break;
+    }
+
+    // don't echo input
+    noecho();
+
+    // go back
+    return;
+}
+
+//______________________________________________________________________________
 void RunEditor()
 {
     // Show the run editor.
@@ -2029,7 +2090,7 @@ void RunEditor()
     // menu configuration
     const Char_t mTitle[] = "RUN EDITOR";
     const Char_t mMsg[] = "Select a run operation";
-    const Int_t mN = 8;
+    const Int_t mN = 9;
     const Char_t* mEntries[] = { "Browse runs",
                                  "Change path",
                                  "Change target",
@@ -2037,6 +2098,7 @@ void RunEditor()
                                  "Change degree of target polarization",
                                  "Change beam polarization",
                                  "Change degree of beam polarization",
+                                 "Remove all runs",
                                  "Go back" };
     // menue index
     Int_t choice = 0;
@@ -2069,7 +2131,9 @@ void RunEditor()
             case  6: ChangeRunEntry("CHANGE DEGREE OF BEAM POLARIZATION",
                                     "degree of beam polarization", kBEAM_POL_DEG);
                      break;
-            case  7: return;
+            case  7: RemoveAllRuns();
+                     break;
+            case  8: return;
         }
     }
 }
