@@ -2310,7 +2310,7 @@ Bool_t TCMySQLManager::CreateDataTable(const Char_t* data, Int_t nElem)
 TList* TCMySQLManager::SearchDistinctEntries(const Char_t* field, const Char_t* table)
 {
     // Return a list of TStrings containing all distinct entries of the type
-    // 'data' in the table 'table' of the CaLib database.
+    // 'field' in the table 'table' of the CaLib database.
     // If nothing is found 0 is returned.
     // NOTE: The list must be destroyed by the caller.
 
@@ -2325,7 +2325,7 @@ TList* TCMySQLManager::SearchDistinctEntries(const Char_t* field, const Char_t* 
     {
         if (!fSilence) Error("SearchDistinctEntries", "Could find field '%s' in table '%s'!",
                              field, table);
-        return kFALSE;
+        return 0;
     }
 
     // create list for rows
