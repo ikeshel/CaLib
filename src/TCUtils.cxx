@@ -393,8 +393,9 @@ Int_t TCUtils::ReadCommaSepList(const TString* s, Int_t* outList)
         if (!osp) continue;
 
         // trim and convert
-        osp->GetString().ReplaceAll(" ", "");
-        outList[n++] = osp->GetString().Atoi();
+        TString sc = osp->GetString();
+        sc.ReplaceAll(" ", "");
+        outList[n++] = sc.Atoi();
     }
 
     // clean-up
