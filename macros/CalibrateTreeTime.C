@@ -15,6 +15,9 @@
 #include "Math/Functor.h"
 
 #include "TCMySQLManager.h"
+#include "TCARFileLoader.h"
+#include "TCUtils.h"
+#include "TCReadConfig.h"
 
 Double_t* gGain;
 Long64_t gEntries;
