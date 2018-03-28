@@ -19,6 +19,7 @@
 #include "TCUtils.h"
 #include "TCReadConfig.h"
 
+Double_t* gOff;
 Double_t* gGain;
 Long64_t gEntries;
 Short_t* gElem_1;
@@ -28,6 +29,8 @@ Float_t* gRaw_Time_2;
 Bool_t gIsTAPS;
 Int_t gMaxTAPS;
 
+void CalibrateMinimize(Int_t nPar);
+void CalibrateFit(Int_t nPar, Double_t time_limit, Double_t bad_frac);
 Double_t CostFunction(const Double_t* par);
 TH2* CreateHisto(const Char_t* name, Int_t nPar, const Double_t* par);
 
@@ -41,30 +44,36 @@ void CalibrateTreeTime(Int_t run)
     //
 
     // CB
+    //const Bool_t doFit        = kTRUE;
     //const Char_t* treeName    = "CaLib_CB_Time_Tree";
     //const Int_t nPar          = 720;
     //const Char_t* data_off    = "Data.CB.T0";
     //const Char_t* data_gain   = 0;
     //const Char_t* calibration = "LH2_Dec_14";
-    gIsTAPS                   = kFALSE;
+    //const Double_t time_limit = 0.1;
+    //const Double_t bad_frac   = 0.05;
+    //gIsTAPS                   = kFALSE;
 
     // TAPS
+    const Bool_t doFit        = kTRUE;
     const Char_t* treeName    = "CaLib_TAPS_Time_Tree";
     const Int_t nPar          = 438;
     const Char_t* data_off    = "Data.TAPS.T0";
     const Char_t* data_gain   = "Data.TAPS.T1";
     const Char_t* calibration = "LH2_Dec_14";
+    const Double_t time_limit = 0.1;
+    const Double_t bad_frac   = 0.05;
     gIsTAPS                   = kTRUE;
 
     // read TAPS config from config file
     gMaxTAPS = TCReadConfig::GetReader()->GetConfigInt("TAPS.Elements");
 
     // read calibration parameters
-    Double_t par[nPar];
+    gOff = new Double_t[nPar];
     gGain = new Double_t[nPar];
     Int_t set = TCMySQLManager::GetManager()->GetSetForRun(data_off, calibration, run);
     printf("Reading set %d for run %d of data '%s' for calibration '%s'\n", set, run, data_off, calibration);
-    TCMySQLManager::GetManager()->ReadParameters(data_off, calibration, set, par, nPar);
+    TCMySQLManager::GetManager()->ReadParameters(data_off, calibration, set, gOff, nPar);
     if (data_gain)
     {
         TCMySQLManager::GetManager()->ReadParameters(data_gain, calibration, set, gGain, nPar);
@@ -77,7 +86,7 @@ void CalibrateTreeTime(Int_t run)
 
     // debug
     //for (Int_t i = 0; i < nPar; i++)
-    //    printf("%3d  %f   %f\n", i, par[i], gGain[i]);
+    //    printf("%3d  %f   %f\n", i, gOff[i], gGain[i]);
 
     // open the file
     Int_t r[1] = { run };
@@ -130,6 +139,57 @@ void CalibrateTreeTime(Int_t run)
         n++;
     }
 
+    // update number of entries
+    gEntries = n;
+
+    // create histogram
+    TH2* hBefore = CreateHisto("before", nPar, gOff);
+
+    // perform calibration
+    TStopwatch watch;
+    watch.Start();
+    if (doFit)
+    {
+        printf("Calibrating using fitting\n");
+        CalibrateFit(nPar, time_limit, bad_frac);
+    }
+    else
+    {
+        printf("Calibrating using minimization\n");
+        CalibrateMinimize(nPar);
+    }
+    watch.Stop();
+    watch.Print();
+
+    // create histogram
+    TH2* hAfter = CreateHisto("after", nPar, gOff);
+
+    // save histograms
+    TFile* fout = new TFile(TString::Format("tree_calib_%d.root", run).Data(), "recreate");
+    hBefore->Write();
+    hAfter->Write();
+    delete fout;
+
+    // save parameters
+    FILE* fout_a = fopen(TString::Format("tree_calib_%d.dat", run).Data(), "w");
+    for (Int_t i = 0; i < nPar; i++)
+        fprintf(fout_a, "%lf\n", gOff[i]);
+    fclose(fout_a);
+
+    // clean-up
+    //delete f;
+    //delete tree;
+    delete [] gOff;
+    delete [] gGain;
+
+    gSystem->Exit(0);
+}
+
+//______________________________________________________________________________
+void CalibrateMinimize(Int_t nPar)
+{
+    // Calibrate using minimization.
+
     // create minimizer
     ROOT::Minuit2::Minuit2Minimizer min(ROOT::Minuit2::kMigrad);
     min.SetPrintLevel(1);
@@ -143,44 +203,82 @@ void CalibrateTreeTime(Int_t run)
 
     // set fit parameters
     for (Int_t i = 0; i < nPar; i++)
-        min.SetVariable(i, TString::Format("Par_%d", i).Data(), par[i], 1);
+        min.SetVariable(i, TString::Format("Par_%d", i).Data(), gOff[i], 1);
 
     // perform minimization
-    printf("Minimizing\n");
-    TStopwatch watch;
-    watch.Start();
     min.Minimize();
-    watch.Stop();
-    watch.Print();
 
-    // create histogram
-    TH2* hBefore = CreateHisto("before", nPar, par);
-    TH2* hAfter = CreateHisto("after", nPar, min.X());
-
-    // save histograms
-    TFile* fout = new TFile(TString::Format("tree_calib_%d.root", run).Data(), "recreate");
-    hBefore->Write();
-    hAfter->Write();
-    delete fout;
-
-    // save parameters
-    FILE* fout_a = fopen(TString::Format("tree_calib_%d.dat", run).Data(), "w");
+    // copy parameters
     for (Int_t i = 0; i < nPar; i++)
-        fprintf(fout_a, "%lf\n", par[i]);
-    fclose(fout_a);
+        gOff[i] = min.X()[i];
+}
 
-    // clean-up
-    //delete f;
-    //delete tree;
-    delete [] gGain;
+//______________________________________________________________________________
+void CalibrateFit(Int_t nPar, Double_t time_limit, Double_t bad_frac)
+{
+    // Calibrate using iterative fitting.
 
-    gSystem->Exit(0);
+    const Double_t convergence_factor = 0.05;
+
+    // iterate calibrations
+    for (Int_t i = 0; i >= 0; i++)
+    {
+        // create new histogram
+        TH2* h = CreateHisto("fit_histo", nPar, gOff);
+
+        // user info
+        printf("Calibration iteration %d\n", i+1);
+
+        // loop over elements
+        Int_t n = 0;
+        Int_t outside_n = 0;
+        for (Int_t j = 0; j < nPar; j++)
+        {
+            // create projection
+            TH1* hProj = (TH1*) h->ProjectionX(TString::Format("Proj_%d", j).Data(), j+1, j+1, "e");
+
+            // check for filled histograms
+            if (hProj->GetEntries())
+            {
+                // create fitting function
+                TF1* func = new TF1(TString::Format("Func_%d", j).Data(), "gaus", -5, 5);
+                func->SetParameter(0, 1);
+                func->SetParameter(1, hProj->GetXaxis()->GetBinCenter(hProj->GetMaximumBin()));
+                func->SetParameter(2, 0.1);
+
+                // fit histogram
+                hProj->GetXaxis()->SetRangeUser(-5, 5);
+                hProj->Fit(func, "0Q");
+                Double_t mean = func->GetParameter(1);
+
+                // update offset
+                gOff[j] = gOff[j] + convergence_factor * mean / gGain[j];
+                n++;
+                if (TMath::Abs(mean) > time_limit)
+                    outside_n++;
+
+                // clean-up
+                delete func;
+            }
+
+            // clean-up
+            delete hProj;
+        }
+
+        // clean-up
+        delete h;
+
+        // user info
+        Double_t outside_frac = (Double_t)outside_n/(Double_t)n;
+        printf("Element outside limits: %.1f%%\n", outside_frac*100.);
+        if (outside_frac < bad_frac)
+            break;
+    }
 }
 
 //______________________________________________________________________________
 Double_t CostFunction(const Double_t* par)
 {
-    // read tree
     Double_t sum = 0;
     for (Long64_t i = 0; i < gEntries; i++)
     {
