@@ -68,6 +68,9 @@
 #pragma link C++ class TCCalibPhi+;
 #pragma link C++ class TCCalibDeltaETrad+;
 #pragma link C++ class TCCalibDroop+;
+#pragma link C++ class TCCalibPeakFit+;
+#pragma link C++ class TCCalibPeakFitCB+;
+#pragma link C++ class TCCalibPeakFitTAPS+;
 
 // misc calibration classes
 #pragma link C++ class TCCalibTargetPosition+;
