@@ -5,7 +5,7 @@ CaLib calibration database system
 ### Installation
 
 #### Dependencies
-* ROOT 5.34 (with MySQL or/and SQLite support)
+* ROOT 5.34 / ROOT 6.10 or newer (with MySQL or/and SQLite support)
 * ncurses
 * CMake 2.8
 
@@ -58,11 +58,17 @@ Further information and examples can be found in the macros directory.
 
 ### Changelog
 
-#### 0.3.0beta
+#### 0.3.0
+March 29, 2018
 * added SQLite support
-* improved support for bad scaler reads
-* added data type for the beam polarization
 * use CMake building
+* support for ROOT 6
+* support for Pizza detector
+* extended calib_manager
+* generic peak calibration module
+* improved support for bad scaler reads
+* graphics/fitting improvements (marker line, refitting, ignoring elements, convergence factors, etc.)
+* added data type for the beam polarization
 * bugfixes
 
 #### 0.2.0
