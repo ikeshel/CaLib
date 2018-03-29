@@ -494,14 +494,15 @@ void CreateModuleList()
         {
             // skip non-module (base) classes
             if (c == "TCCalib") continue;
-            if (c == "TCCalibPed") continue;
-            if (c == "TCCalibTime") continue;
-            if (c == "TCCalibEnergy") continue;
-            if (c == "TCCalibQuadEnergy") continue;
-            if (c == "TCCalibDiscrThr") continue;
-            if (c == "TCCalibPhi") continue;
-            if (c == "TCCalibDeltaETrad") continue;
-            if (c == "TCCalibDroop") continue;
+            else if (c == "TCCalibPed") continue;
+            else if (c == "TCCalibTime") continue;
+            else if (c == "TCCalibEnergy") continue;
+            else if (c == "TCCalibQuadEnergy") continue;
+            else if (c == "TCCalibDiscrThr") continue;
+            else if (c == "TCCalibPhi") continue;
+            else if (c == "TCCalibDeltaETrad") continue;
+            else if (c == "TCCalibDroop") continue;
+            else if (c == "TCCalibPeakFit") continue;
 
             // add module to list if it is really a module
             TClass tc(c.Data());
