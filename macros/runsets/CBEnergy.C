@@ -56,7 +56,7 @@ void Fit(Int_t run, Bool_t fitEta)
         if (!(fitres = gH->Fit(gFitFunc, "RB0Q"))) break;
 
     // get position
-    pos = gFitFunc->GetParameter(1);
+    Double_t pos = gFitFunc->GetParameter(1);
 
     // check failed fits
     if (fitres)
@@ -169,7 +169,7 @@ void CBEnergy()
             gRFile = 0;
 
             // load ROOT file
-            sprintf(tmp, "%s/ARHistograms_CB_%d.root", fLoc, runs[j]);
+            sprintf(tmp, "%s/ARHistograms_CBTaggTAPS_%d.root", fLoc, runs[j]);
             gRFile = new TFile(tmp);
 
             // check file

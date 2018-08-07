@@ -36,16 +36,16 @@ void Fit(Int_t run)
     gFitFunc->SetRange(80, 180);
     gFitFunc->SetLineColor(2);
     gFitFunc->SetParameters(gH->GetMaximum(), 135, 10, 1, 1, 1, 0.1);
-    gFitFunc->SetParLimits(0, 0, 5000);
-    gFitFunc->SetParLimits(1, 110, 130);
-    gFitFunc->SetParLimits(2, 5, 10);
+    gFitFunc->SetParLimits(0, 0, gH->GetMaximum());
+    gFitFunc->SetParLimits(1, 110, 140);
+    gFitFunc->SetParLimits(2, 5, 12);
     Int_t fitres;
 
     for (Int_t i = 0; i < 10; i++)
         if (!(fitres = gH->Fit(gFitFunc, "RBQ0"))) break;
 
     // get position
-    fPi0Pos = gFitFunc->GetParameter(1);
+    Double_t fPi0Pos = gFitFunc->GetParameter(1);
 
     // check failed fits
     if (fitres)
@@ -153,7 +153,7 @@ void TAPSEnergy()
             gRFile = 0;
 
             // load ROOT file
-            sprintf(tmp, "%s/ARHistograms_CB_%d.root", fLoc, runs[j]);
+            sprintf(tmp, "%s/ARHistograms_CBTaggTAPS_%d.root", fLoc, runs[j]);
             gRFile = new TFile(tmp);
 
             // check file

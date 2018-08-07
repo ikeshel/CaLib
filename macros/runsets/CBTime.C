@@ -147,7 +147,7 @@ void CBTime()
             gRFile = 0;
 
             // load ROOT file
-            sprintf(tmp, "%s/ARHistograms_CB_%d.root", fLoc, runs[j]);
+            sprintf(tmp, "%s/ARHistograms_CBTaggTAPS_%d.root", fLoc, runs[j]);
             gRFile = new TFile(tmp);
 
             // check file
