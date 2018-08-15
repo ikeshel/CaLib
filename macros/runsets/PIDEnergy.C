@@ -29,10 +29,10 @@ void Fit(Int_t run)
     Char_t tmp[256];
 
     // delete old function
-    if (gFitFunc) delete gFitFunc;
+    //if (gFitFunc) delete gFitFunc;
 
     // create fitting function
-    if (gFitFunc) delete gFitFunc;
+    //if (gFitFunc) delete gFitFunc;
     sprintf(tmp, "fGauss_%d", run);
     gFitFunc = new TF1(tmp, "expo(0)+gaus(2)");
     gFitFunc->SetLineColor(2);
@@ -87,23 +87,15 @@ void PIDEnergy()
     // general configuration
     Bool_t watch = kTRUE;
     const Char_t* data = "Data.PID.E1";
-    const Char_t* hName = "CaLib_PID_dE_E_013";
+    const Char_t* hName = "CaLib_PID_dE_E_001";
     Double_t yMin = 0;
     Double_t yMax = 2000;
     gMin = 500;
     gMax = 1100;
 
-    // configuration (December 2007)
-    //const Char_t calibration[] = "LD2_Dec_07";
-    //const Char_t* fLoc = "/usr/puma_scratch0/werthm/A2/Dec_07/AR/out/droop";
-
-    // configuration (February 2009)
-    //const Char_t calibration[] = "LD2_Feb_09";
-    //const Char_t* fLoc = "/usr/puma_scratch0/werthm/A2/Feb_09/AR/out/droop";
-
-    // configuration (May 2009)
-    const Char_t calibration[] = "LD2_May_09";
-    const Char_t* fLoc = "/usr/puma_scratch0/werthm/A2/May_09/AR/out/droop";
+    // configuration
+    const Char_t calibration[] = "LH2_May_18";
+    const Char_t* fLoc = "$HOME/loc/presort/data/May_18";
 
     // create histogram
     gHOverview = new TH1F("Overview", "Overview", 40000, 0, 40000);
@@ -154,7 +146,7 @@ void PIDEnergy()
             gRFile = 0;
 
             // load ROOT file
-            sprintf(tmp, "%s/ARHistograms_CB_%d.root", fLoc, runs[j]);
+            sprintf(tmp, "%s/ARHistograms_CBTaggTAPS_%d.root", fLoc, runs[j]);
             gRFile = new TFile(tmp);
 
             // check file
@@ -171,7 +163,7 @@ void PIDEnergy()
             gH3->GetXaxis()->SetRangeUser(40, 60);
             sprintf(tmp, "Proj_%d_y", runs[j]);
             gH = (TH1D*) gH3->Project3D(tmp);
-            gH->Rebin(3);
+            gH->Rebin(2);
 
             // fit the histogram
             Fit(runs[j]);

@@ -22,6 +22,7 @@
 #include "TCMySQLManager.h"
 #include "TLine.h"
 #include "TGraph.h"
+#include "TOSUtils.h"
 #endif
 
 class TCReadARCalib;
@@ -67,6 +68,7 @@ void CheckPedestals(const Char_t* loc, const Char_t* filePre)
         // extract run number
         Int_t runNumber;
         sprintf(t, "%s/%s_%%d.root", loc, filePre);
+        strcpy(t, TOSUtils::ExpandPath(t));
         sscanf(f->GetName(), t, &runNumber);
         runNumbersD[i] = (Double_t)runNumber;
 
@@ -205,17 +207,18 @@ void TAPSPed()
 
     // general configuration
     Bool_t watch = kFALSE;
+    //const Char_t* data = "Data.TAPS.LG.E0";
     //const Char_t* data = "Data.TAPS.SG.E0";
     const Char_t* data = "Data.Veto.E0";
     const Char_t* elemDesc = "Element:";
     //const Char_t* elemDesc = "TAPSSG:";
     Double_t yMin = 110;
     Double_t yMax = 160;
-    const Char_t calibration[] = "LD2_Mar_13";
-    const Char_t* fLoc = "/home/werthm/loc/presort/data/Mar_13";
-    //const Char_t* fAR = "/home/werthm/src/ROOT/acqu/acqu_user/data/Mar_13/TAPS/BaF2_PWO.dat";
-    const Char_t* fAR = "/home/werthm/src/ROOT/acqu/acqu_user/data/Mar_13/TAPS/Veto.dat";
-    const Char_t* filePre = "ARHistograms_CB";
+    const Char_t calibration[] = "LH2_May_18";
+    const Char_t* fLoc = "$HOME/loc/presort/data/May_18";
+    //const Char_t* fAR = "/home/werthm/src/ROOT/acqu/acqu_user/data/May_18/TAPS/BaF2_PWO.dat";
+    const Char_t* fAR = "/home/werthm/src/ROOT/acqu/acqu_user/data/May_18/TAPS/Veto.dat";
+    const Char_t* filePre = "ARHistograms_CBTaggTAPS";
 
     // read the calibration file with the correct element identifier
     gReadAR = new TCReadARCalib(fAR, kFALSE, elemDesc);
@@ -242,6 +245,7 @@ void TAPSPed()
         {
             // load ROOT file
             sprintf(tmp, "%s/%s_%d.root", fLoc, filePre, runs[j]);
+            strcpy(tmp, TOSUtils::ExpandPath(tmp));
             TFile* f = new TFile(tmp);
 
             // check file

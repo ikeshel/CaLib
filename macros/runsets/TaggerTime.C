@@ -21,6 +21,7 @@
 #include "TCMySQLManager.h"
 #include "TLine.h"
 #include "TGraph.h"
+#include "TOSUtils.h"
 #endif
 
 TList* gFiles;
@@ -61,7 +62,8 @@ void CheckTime(const Char_t* loc)
 
         // extract run number
         Int_t runNumber;
-        sprintf(t, "%s/ARHistograms_CB_%%d.root", loc);
+        sprintf(t, "%s/ARHistograms_CBTaggTAPS_%%d.root", loc);
+        strcpy(t, TOSUtils::ExpandPath(t));
         sscanf(f->GetName(), t, &runNumber);
         runNumbersD[i] = (Double_t)runNumber;
 
@@ -135,7 +137,7 @@ void CheckTime(const Char_t* loc)
         sprintf(t, "Overview_%03d", j);
         g->SetName(t);
         g->SetTitle(t);
-        //g->GetYaxis()->SetRangeUser(1200, 1300);
+        g->GetYaxis()->SetRangeUser(-30, 20);
         g->Write(g->GetName(), TObject::kOverwrite);
 
         delete g;
@@ -165,18 +167,9 @@ void TaggerTime()
     Bool_t watch = kFALSE;
     const Char_t* data = "Data.Tagger.T0";
 
-    // configuration (December 2007)
-    const Char_t calibration[] = "LD2_Dec_07";
-    //const Char_t* fLoc = "/usr/puma_scratch0/werthm/A2/Dec_07/AR/out/tagger_time";
-    const Char_t* fLoc = "/usr/cheetah_scratch0/kaeser/CaLib/Dec_07";
-
-    // configuration (February 2009)
-    //const Char_t calibration[] = "LD2_Feb_09";
-    //const Char_t* fLoc = "/usr/puma_scratch0/werthm/A2/Feb_09/AR/out/ADC";
-
-    // configuration (May 2009)
-    //const Char_t calibration[] = "LD2_May_09";
-    //const Char_t* fLoc = "/usr/puma_scratch0/werthm/A2/May_09/AR/out/ADC";
+    // configuration
+    const Char_t calibration[] = "LH2_May_18";
+    const Char_t* fLoc = "$HOME/loc/presort/data/May_18";
 
     // get number of sets
     Int_t nSets = TCMySQLManager::GetManager()->GetNsets(data, calibration);
@@ -196,7 +189,7 @@ void TaggerTime()
         for (Int_t j = 0; j < nRuns; j++)
         {
             // load ROOT file
-            sprintf(tmp, "%s/ARHistograms_CB_%d.root", fLoc, runs[j]);
+            sprintf(tmp, "%s/ARHistograms_CBTaggTAPS_%d.root", fLoc, runs[j]);
             TFile* f = new TFile(tmp);
 
             // check file

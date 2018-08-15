@@ -108,17 +108,9 @@ void CBEnergy()
     Double_t yMin = 110;
     Double_t yMax = 160;
 
-    // configuration (December 2007)
-    const Char_t calibration[] = "LD2_Dec_07";
-    const Char_t* fLoc = "/Users/fulgur/Desktop/calib/Dec_07";
-
-    // configuration (February 2009)
-    //const Char_t calibration[] = "LD2_Feb_09";
-    //const Char_t* fLoc = "/Users/fulgur/Desktop/calib/Feb_09";
-
-    // configuration (May 2009)
-    //const Char_t calibration[] = "LD2_May_09";
-    //const Char_t* fLoc = "/Users/fulgur/Desktop/calib/May_09";
+    // configuration
+    const Char_t calibration[] = "LH2_May_18";
+    const Char_t* fLoc = "$HOME/loc/presort/data/May_18";
 
     // create histogram
     gHOverview = new TH1F("Overview", "Overview", 40000, 0, 40000);

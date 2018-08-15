@@ -29,7 +29,7 @@ void Fit(TH1* h, Double_t* outPos, Double_t* outFWHM)
     h->Fit(func, "RBQO");
 
     // get position and FWHM
-    fPi0Pos = func->GetParameter(1);
+    Double_t fPi0Pos = func->GetParameter(1);
     *outPos = fPi0Pos;
     *outFWHM = 2.35*func->GetParameter(2);
 
@@ -67,18 +67,9 @@ void CBEnergy()
     const Char_t* data = "Data.CB.E1";
     const Char_t* hName = "CaLib_CB_IM_Neut";
 
-    // configuration (December 2007)
-    //const Char_t calibration[] = "LD2_Dec_07";
-    //const Char_t filePat[] = "/usr/puma_scratch0/werthm/A2/Dec_07/AR/out/ARHistograms_CB_RUN.root";
-
-    // configuration (February 2009)
-    const Char_t calibration[] = "LD2_Feb_09";
-    //const Char_t filePat[] = "/usr/puma_scratch0/werthm/A2/Feb_09/AR/out/ARHistograms_CB_RUN.root";
-    const Char_t filePat[] = "/usr/cheetah_scratch0/kaeser/CaLib/Feb_09/ARHistograms_CB_RUN.root";
-
-    // configuration (May 2009)
-    //const Char_t calibration[] = "LD2_May_09";
-    //const Char_t filePat[] = "/usr/puma_scratch0/werthm/A2/May_09/AR/out/ARHistograms_CB_RUN.root";
+    // configuration
+    const Char_t calibration[] = "LH2_May_18";
+    const Char_t filePat[] = "$HOME/loc/presort/data/May_18/ARHistograms_CBTaggTAPS_RUN.root";
 
     // get number of sets
     Int_t nSets = TCMySQLManager::GetManager()->GetNsets(data, calibration);
