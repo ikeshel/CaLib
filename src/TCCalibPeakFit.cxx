@@ -118,12 +118,13 @@ void TCCalibPeakFit::Fit(Int_t elem)
     fCanvasFit->cd(2);
     sprintf(tmp, "%s.Histo.Fit", GetName());
     TCUtils::FormatHistogram(fFitHisto, tmp);
-    fFitHisto->Draw("hist");
+    //fFitHisto->Draw("hist");
+    fFitHisto->Draw();
 
     // read fit config
     Double_t lowLimit = fFitHisto->GetXaxis()->GetXmin();
     Double_t highLimit = fFitHisto->GetXaxis()->GetXmax();
-    sprintf(tmp, "%s.Fit.Range", GetName());
+    sprintf(tmp, "%s.Histo.Fit.Range", GetName());
     TCReadConfig::GetReader()->GetConfigDoubleDouble(tmp, &lowLimit, &highLimit);
 
     // check for sufficient statistics
@@ -133,17 +134,22 @@ void TCCalibPeakFit::Fit(Int_t elem)
         if (fFitFunc) delete fFitFunc;
         sprintf(tmp, "fFunc_%i", elem);
 
-        // the fit function
-        fFitFunc = new TF1("fFitFunc", "gaus(0)+pol2(3)", lowLimit, highLimit);
-        fFitFunc->SetLineColor(2);
-
         // get important parameter positions
         Double_t fMean = fFitHisto->GetXaxis()->GetBinCenter(fFitHisto->GetMaximumBin());
         Double_t max = fFitHisto->GetBinContent(fFitHisto->GetMaximumBin());
 
         // check for refit
         if (fIsReFit)
+        {
             fMean = fLine->GetPos();
+            lowLimit = fMean - 2;
+            highLimit = fMean + 2;
+        }
+
+        // the fit function
+        fFitFunc = new TF1("fFitFunc", "gaus(0)+pol2(3)", lowLimit, highLimit);
+        //fFitFunc = new TF1("fFitFunc", "gaus(0)", lowLimit, highLimit);
+        fFitFunc->SetLineColor(2);
 
         // configure fitting function
         fFitFunc->SetParameters(max, fMean, 3, 1, 0.1, 0.1);
@@ -155,6 +161,10 @@ void TCCalibPeakFit::Fit(Int_t elem)
 
         // final results
         fMean = fFitFunc->GetParameter(1);
+
+        // correct bad position
+        if (fMean < fFitHisto->GetXaxis()->GetXmin() || fMean > fFitHisto->GetXaxis()->GetXmax())
+            fMean = 0.5 * (fFitHisto->GetXaxis()->GetXmin() + fFitHisto->GetXaxis()->GetXmax());
 
         // draw mean indicator line
         fLine->SetPos(fMean);
