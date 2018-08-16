@@ -209,8 +209,9 @@ void TCCalibTime::Fit(Int_t elem)
         if (this->InheritsFrom("TCCalibTaggerTime"))
         {
             range = 5;
-            factor = 10;
-            fFitFunc->SetParLimits(4, 0.01, 2);
+            factor = 6;
+            fFitFunc->SetParameter(4, 1);
+            fFitFunc->SetParLimits(4, 0.1, 2);
         }
 
         // check for refit
