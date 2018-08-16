@@ -55,6 +55,7 @@ TCCalibDiscrThr::~TCCalibDiscrThr()
     if (fMainHisto2) delete fMainHisto2;
     if (fDeriv) delete fDeriv;
     if (fLine) delete fLine;
+    if (fThr) delete [] fThr;
 }
 
 //______________________________________________________________________________
@@ -70,7 +71,9 @@ void TCCalibDiscrThr::Init()
     fGain = 0;
     fMainHisto2 = 0;
     fDeriv = 0;
-    fThr = 0;
+    fThr = new Double_t[fNelem];
+    for (Int_t i = 0; i < fNelem; i++)
+        fThr[i] = 0;
     fLine = new TLine();
 
     // configure line
@@ -242,8 +245,8 @@ void TCCalibDiscrThr::Fit(Int_t elem)
                     // check bin content
                     if (fFitHisto->GetBinContent(i) > 0)
                     {
-                        fThr = fFitHisto->GetBinCenter(i);
-                        fFitHisto->GetXaxis()->SetRangeUser(fThr-7, fThr+7);
+                        fThr[elem] = fFitHisto->GetBinCenter(i);
+                        fFitHisto->GetXaxis()->SetRangeUser(fThr[elem]-7, fThr[elem]+7);
                         break;
                     }
                 }
@@ -260,29 +263,29 @@ void TCCalibDiscrThr::Fit(Int_t elem)
                 }
 
                 // get maximum
-                fThr = fDeriv->GetBinCenter(fDeriv->GetMaximumBin());
+                fThr[elem] = fDeriv->GetBinCenter(fDeriv->GetMaximumBin());
 
                 // create fitting function
                 sprintf(tmp, "Fitfunc_%d", elem);
-                fFitFunc = new TF1(tmp, "gaus", fThr-8, fThr+8);
+                fFitFunc = new TF1(tmp, "gaus", fThr[elem]-8, fThr[elem]+8);
                 fFitFunc->SetLineColor(kRed);
-                fFitFunc->SetParameters(fDeriv->GetMaximum(), fThr, 1);
+                fFitFunc->SetParameters(fDeriv->GetMaximum(), fThr[elem], 1);
 
                 // fit
                 fDeriv->Fit(fFitFunc, "RBQ0");
-                fThr = fFitFunc->GetParameter(1);
+                fThr[elem] = fFitFunc->GetParameter(1);
 
                 // correct bad position
-                if (fThr < fDeriv->GetXaxis()->GetXmin() || fThr > fDeriv->GetXaxis()->GetXmax())
-                    fThr = 0.5 * (fDeriv->GetXaxis()->GetXmin() + fDeriv->GetXaxis()->GetXmax());
+                if (fThr[elem] < fDeriv->GetXaxis()->GetXmin() || fThr[elem] > fDeriv->GetXaxis()->GetXmax())
+                    fThr[elem] = 0.5 * (fDeriv->GetXaxis()->GetXmin() + fDeriv->GetXaxis()->GetXmax());
             }
 
             // draw histogram
             fCanvasFit->cd(2);
             if (fPed)
-                fDeriv->GetXaxis()->SetRangeUser(fThr-7, fThr+7);
+                fDeriv->GetXaxis()->SetRangeUser(fThr[elem]-7, fThr[elem]+7);
             else
-                fDeriv->GetXaxis()->SetRangeUser(fThr-20, fThr+20);
+                fDeriv->GetXaxis()->SetRangeUser(fThr[elem]-20, fThr[elem]+20);
             fDeriv->Draw("hist");
 
             // draw function
@@ -294,8 +297,8 @@ void TCCalibDiscrThr::Fit(Int_t elem)
             // draw mean indicator line
             fLine->SetY1(0);
             fLine->SetY2(fFitHisto->GetMaximum() + 20);
-            fLine->SetX1(fThr);
-            fLine->SetX2(fThr);
+            fLine->SetX1(fThr[elem]);
+            fLine->SetX2(fThr[elem]);
 
             // draw histogram
             fFitHisto->SetFillColor(35);
@@ -333,13 +336,13 @@ void TCCalibDiscrThr::Calculate(Int_t elem)
         if (fFitHisto->GetEntries())
         {
             // check if line position was modified by hand
-            if (fLine->GetX1() != fThr) fThr = fLine->GetX1();
+            if (fLine->GetX1() != fThr[elem]) fThr[elem] = fLine->GetX1();
 
             // calculate the new threshold
             if (fADC)
-                fNewVal[elem] = fGain[elem] * (fThr - fPed[elem]);
+                fNewVal[elem] = fGain[elem] * (fThr[elem] - fPed[elem]);
             else
-                fNewVal[elem] = fThr;
+                fNewVal[elem] = fThr[elem];
 
             // update overview histogram
             fOverviewHisto->SetBinContent(elem + 1, fNewVal[elem]);
@@ -362,7 +365,7 @@ void TCCalibDiscrThr::Calculate(Int_t elem)
     // user information
     printf("Element: %03d    "
            "fit: %14.8f    old threshold: %14.8f    new threshold: %14.8f    diff: %6.2f %%",
-           elem, fThr, fOldVal[elem], fNewVal[elem],
+           elem, fThr[elem], fOldVal[elem], fNewVal[elem],
            TCUtils::GetDiffPercent(fOldVal[elem], fNewVal[elem]));
     if (empty) printf("    -> empty");
     printf("\n");
@@ -404,5 +407,27 @@ void TCCalibDiscrThr::ReadADC()
     TCARElement* e;
     Int_t n = 0;
     while ((e = (TCARElement*)next())) fADC[n++] = atoi(e->GetADC());
+}
+
+//______________________________________________________________________________
+void TCCalibDiscrThr::WriteValues()
+{
+    // Write the obtained calibration values to the database and save fit
+    // positions to a file.
+
+    // call parent method
+    TCCalib::WriteValues();
+
+    // open the file
+    FILE* fout = fopen("thr_pos.dat", "w");
+
+    // loop over elements
+    for (Int_t i = 0; i < fNelem; i++)
+        fprintf(fout, "%f\n", fThr[i]);
+
+    // close the file
+    fclose(fout);
+
+    Info("WriteValues", "Threshold positions were written to thr_pos.dat");
 }
 

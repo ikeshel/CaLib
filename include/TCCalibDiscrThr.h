@@ -32,12 +32,13 @@ private:
     Double_t* fGain;                    // gain array
     TH2* fMainHisto2;                   // normalization histogram
     TH1* fDeriv;                        // derived histogram
-    Double_t fThr;                      // threshold value
+    Double_t* fThr;                     // threshold value
     TLine* fLine;                       // mean indicator line
 
     virtual void Init();
     virtual void Fit(Int_t elem);
     virtual void Calculate(Int_t elem);
+    virtual void WriteValues();
 
     void ReadADC();
 
