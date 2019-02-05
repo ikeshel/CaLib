@@ -174,17 +174,17 @@ ButtonWindow::ButtonWindow()
     fTB_Next->Connect("Clicked()", "ButtonWindow", this, "DoNext()");
     nav_man_frame->AddFrame(fTB_Next, new TGLayoutHints(kLHintsLeft, 0, 0, 10, 0));
 
-    fTB_Ignore = new TGTextButton(nav_man_frame, "   Ignore   ");
-    ResizeFrame(fTB_Ignore);
-    fTB_Ignore->SetToolTipText("Go to next element and ignore current one", 200);
-    fTB_Ignore->Connect("Clicked()", "ButtonWindow", this, "DoIgnore()");
-    nav_man_frame->AddFrame(fTB_Ignore, new TGLayoutHints(kLHintsLeft, 0, 20, 10, 0));
-
     fTB_ReFit = new TGTextButton(nav_man_frame, "   (Re)Fit   ");
     ResizeFrame(fTB_ReFit);
     fTB_ReFit->SetToolTipText("(Re-)Fit current element", 200);
     fTB_ReFit->Connect("Clicked()", "ButtonWindow", this, "DoReFit()");
-    nav_man_frame->AddFrame(fTB_ReFit, new TGLayoutHints(kLHintsLeft, 0, 0, 10, 0));
+    nav_man_frame->AddFrame(fTB_ReFit, new TGLayoutHints(kLHintsLeft, 0, 20, 10, 0));
+
+    fTB_Ignore = new TGTextButton(nav_man_frame, "   Ignore   ");
+    ResizeFrame(fTB_Ignore);
+    fTB_Ignore->SetToolTipText("Go to next element and ignore current one", 200);
+    fTB_Ignore->Connect("Clicked()", "ButtonWindow", this, "DoIgnore()");
+    nav_man_frame->AddFrame(fTB_Ignore, new TGLayoutHints(kLHintsLeft, 0, 0, 10, 0));
 
     fTB_Goto = new TGTextButton(nav_man_frame, "Go to");
     ResizeFrame(fTB_Goto);
