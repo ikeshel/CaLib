@@ -763,8 +763,13 @@ void TCCalibRunBadScR::UpdateCanvas()
         Double_t max = fMainHistos[fIndex]->GetXaxis()->GetBinUpEdge(maxb);
         fProjHistos[fIndex]->GetXaxis()->SetRangeUser(min, max);
 
-        // set y-range
-        fProjHistos[fIndex]->GetYaxis()->SetRangeUser(0., fProjHistos[fIndex]->GetBinContent(fProjHistos[fIndex]->GetMaximumBin())*1.1);
+        // set y-range (exclude value of first scaler read)
+        if (min == 0)
+        {
+            fProjHistos[fIndex]->GetXaxis()->SetRangeUser(1, max);
+            fProjHistos[fIndex]->GetYaxis()->SetRangeUser(0., fProjHistos[fIndex]->GetBinContent(fProjHistos[fIndex]->GetMaximumBin())*1.1);
+            fProjHistos[fIndex]->GetXaxis()->SetRangeUser(0, max);
+        }
 
         // set cannot pic flag
         fProjHistos[fIndex]->GetXaxis()->SetBit(kCannotPick);
