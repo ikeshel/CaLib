@@ -22,7 +22,7 @@ void WriteNScRtoDB()
     // Main method.
 
     // macro configuration (to be adapted by the user)
-    const Char_t* calibration = "LH2_Jul_14";
+    const Char_t* calibration = "Solid_Oct_18";
 
     // get configuration ///////////////////////////////////////////////////////
 
@@ -160,6 +160,16 @@ void WriteNScRtoDB()
         {
             printf("Error: Histogram 'EventInfo' for run '%d' not found.\n", runs[i]);
             nerrors++;
+        }
+
+        // try to get scaler read tree
+        TTree* t = (TTree*)f->Get("ScalerEvents");
+        if (t)
+        {
+            Int_t n_scr_tree = t->GetEntries();
+            if (n_scr_tree != n_scr[i])
+                printf("Number of scaler reads in EventInfo and ScalerEvents differ! (%d != %d)\n",
+                       n_scr_tree, n_scr[i]);
         }
 
         // close file
