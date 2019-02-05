@@ -45,6 +45,19 @@ public:
     ClassDef(TCCalibRunBadScR_PID, 0) // PID bad scaler read calibration class
 };
 
+class TCCalibRunBadScR_MWPC : public TCCalibRunBadScR
+{
+
+public:
+    TCCalibRunBadScR_MWPC()
+      : TCCalibRunBadScR("BadScR.MWPC", "Bad scaler read calibration (MWPC)", "Data.Run.BadScR.MWPC", kTRUE) { }
+    virtual ~TCCalibRunBadScR_MWPC() { }
+
+    //virtual Bool_t IsTrueCalib() const { return kTRUE; }
+
+    ClassDef(TCCalibRunBadScR_MWPC, 0) // MWPC bad scaler read calibration class
+};
+
 class TCCalibRunBadScR_BaF2PWO : public TCCalibRunBadScR
 {
 

@@ -127,6 +127,7 @@
 #pragma link C++ class TCCalibRunBadScR+;
 #pragma link C++ class TCCalibRunBadScR_NaI+;
 #pragma link C++ class TCCalibRunBadScR_PID+;
+#pragma link C++ class TCCalibRunBadScR_MWPC+;
 #pragma link C++ class TCCalibRunBadScR_BaF2PWO+;
 #pragma link C++ class TCCalibRunBadScR_BaF2+;
 #pragma link C++ class TCCalibRunBadScR_PWO+;
