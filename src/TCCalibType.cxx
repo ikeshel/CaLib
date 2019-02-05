@@ -32,7 +32,7 @@ TCCalibType::~TCCalibType()
 {
     // Destructor.
 
-    if (fData) delete fData;
+    //if (fData) delete fData; // crashes ROOT 6.12/04
 }
 
 //______________________________________________________________________________
