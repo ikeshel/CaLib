@@ -12,6 +12,7 @@
 
 
 #include <fstream>
+#include <vector>
 
 #include "THashList.h"
 #include "TError.h"
@@ -1283,8 +1284,7 @@ Bool_t TCMySQLManager::UpgradeDatabase(Int_t version)
     }
 
     // create queries (update only this part in the future)
-    Int_t nQuery = 0;
-    Char_t query[3][256];
+    std::vector<TString> query;
     switch (version)
     {
         // version 3:
@@ -1292,10 +1292,9 @@ Bool_t TCMySQLManager::UpgradeDatabase(Int_t version)
         // - remove livetime table
         case 3:
         {
-            nQuery = 3;
-            strcpy(query[0], "ALTER TABLE run_main ADD scr_n INT DEFAULT -1 AFTER size");
-            strcpy(query[1], "ALTER TABLE run_main ADD scr_bad VARCHAR(512) AFTER scr_n");
-            strcpy(query[2], "DROP TABLE IF EXISTS livetime");
+            query.push_back(TString("ALTER TABLE run_main ADD scr_n INT DEFAULT -1 AFTER size"));
+            query.push_back(TString("ALTER TABLE run_main ADD scr_bad VARCHAR(512) AFTER scr_n"));
+            query.push_back(TString("DROP TABLE IF EXISTS livetime"));
             break;
         }
         // version 4:
@@ -1303,8 +1302,7 @@ Bool_t TCMySQLManager::UpgradeDatabase(Int_t version)
         // - add Data.Tagger.Pol data table
         case 4:
         {
-            nQuery = 1;
-            strcpy(query[0], "ALTER TABLE run_main MODIFY scr_bad TEXT");
+            query.push_back(TString("ALTER TABLE run_main MODIFY scr_bad TEXT"));
 
             // add Data.Tagger.Pol data table
             if (!AddNewDataTable("Data.Tagger.Pol"))
@@ -1322,6 +1320,20 @@ Bool_t TCMySQLManager::UpgradeDatabase(Int_t version)
 
             break;
         }
+        // version 5:
+        // - change all tagger tables to have 408 parameters
+        case 5:
+        {
+            // add queries
+            for (Int_t i = 352; i < 408; i++)
+            {
+                query.push_back(TString::Format("ALTER TABLE tagg_t0 ADD par_%03d DOUBLE DEFAULT 0", i));
+                query.push_back(TString::Format("ALTER TABLE tagg_eff ADD par_%03d DOUBLE DEFAULT 0", i));
+                query.push_back(TString::Format("ALTER TABLE tagg_pol ADD par_%03d DOUBLE DEFAULT 0", i));
+            }
+
+            break;
+        }
         default:
         {
             Error("UpgradeDatabase", "Database upgrade to version %d not implemented!", version);
@@ -1331,22 +1343,22 @@ Bool_t TCMySQLManager::UpgradeDatabase(Int_t version)
 
     // loop over queries
     Int_t queryOk = 0;
-    for (Int_t i = 0; i < nQuery; i++)
+    for (Int_t i = 0; i < query.size(); i++)
     {
         // send query
-        Bool_t res = SendExec(query[i]);
+        Bool_t res = SendExec(query[i].Data());
 
         // check result
-        if (!res) Error("UpgradeDatabase", "Could not execute query %d!", i+1);
+        if (!res) Error("UpgradeDatabase", "Could not execute query %d '%s'!", i+1, query[i].Data());
         else
         {
-            Info("UpgradeDatabase", "Executed query %d", i+1);
+            Info("UpgradeDatabase", "Executed query %d '%s'", i+1, query[i].Data());
             queryOk++;
         }
     }
 
     // check final result
-    if (queryOk == nQuery)
+    if (queryOk == query.size())
     {
         Info("UpgradeDatabase", "Performed upgrade of database");
         return kTRUE;

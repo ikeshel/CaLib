@@ -3,9 +3,9 @@
 ########################################################################
 
 # ID                         description                         table           parameters
-Data.Tagger.T0,              Tagger time offset,                 tagg_t0,        352
-Data.Tagger.Eff,             Tagging efficiency,                 tagg_eff,       352
-Data.Tagger.Pol,             Beam polarization,                  tagg_pol,       352
+Data.Tagger.T0,              Tagger time offset,                 tagg_t0,        408
+Data.Tagger.Eff,             Tagging efficiency,                 tagg_eff,       408
+Data.Tagger.Pol,             Beam polarization,                  tagg_pol,       408
 Data.CB.T0,                  CB time offset,                     cb_t0,          720
 Data.CB.Walk.Par0,           CB time walk par0,                  cb_walk0,       720
 Data.CB.Walk.Par1,           CB time walk par1,                  cb_walk1,       720
