@@ -58,8 +58,8 @@ namespace TCConfig
     const Char_t* kCalibDataTableSettings = ",PRIMARY KEY (calibration, first_run) ";
 
     // version numbers
-    const Char_t kCaLibVersion[] = "0.3.0";
-    const Int_t kContainerFormatVersion = 4;
+    const Char_t kCaLibVersion[] = "0.4.0";
+    const Int_t kContainerFormatVersion = 5;
     const Char_t kCaLibDumpName[] = "CaLib_Dump";
     const Int_t kNScREventHBin = 14;
 

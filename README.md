@@ -24,6 +24,13 @@ export PATH="$CALIB/build/bin:$PATH"
 ```
 It is recommended to set all environment variables in your shell configuration file.
 
+#### Upgrade from 0.3.x to 0.4.x
+* The database has to be updated to version 5 using
+
+```
+root -b $CALIB/macros/Upgrade_5.C
+```
+
 #### Upgrade from 0.2.x to 0.3.x
 * The database has to be updated to version 4 using
 
@@ -57,6 +64,11 @@ all of its classes.
 Further information and examples can be found in the macros directory.
 
 ### Changelog
+
+#### 0.4.0
+February 6, 2019
+* changed number of maximum tagger channels to 408 (requires DB upgrade to version 5)
+* small improvements and bugfixes
 
 #### 0.3.0
 March 29, 2018
