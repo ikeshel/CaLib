@@ -244,6 +244,9 @@ void TCCalibTime::Fit(Int_t elem)
 
         // draw indicator line
         fLine->Draw();
+
+        if (!fIsReFit)
+            ReFit();
     }
 
     // update canvas

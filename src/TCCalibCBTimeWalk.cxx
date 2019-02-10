@@ -255,7 +255,7 @@ void TCCalibCBTimeWalk::Fit(Int_t elem)
         if (e_int < 0.5) continue;
 
         // check if projection has enough entries
-        if (fTimeProj->GetEntries() < 100 && i < endBin)
+        if (fTimeProj->GetEntries() < 300 && i < endBin)
             continue;
 
         // calculate mean energy
