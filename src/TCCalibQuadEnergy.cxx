@@ -289,7 +289,7 @@ void TCCalibQuadEnergy::Fit(Int_t elem)
 
         // create eta fitting function
         sprintf(tmp, "fEta_%i", elem);
-        fFitFunc1b = new TF1(tmp, "gaus(0)+pol2(3)", 450, 650);
+        fFitFunc1b = new TF1(tmp, "gaus(0)+pol1(3)", 350, 650);
         fFitFunc1b->SetLineColor(2);
 
         // get x-axis range
@@ -338,7 +338,7 @@ void TCCalibQuadEnergy::Fit(Int_t elem)
         for (Int_t i = 0; i < 10; i++)
             if (!fFitHisto->Fit(fFitFunc, "RBQ0")) break;
         for (Int_t i = 0; i < 10; i++)
-            if (!fFitHisto1b->Fit(fFitFunc1b, "RBQ0")) break;
+            if (!fFitHisto1b->Fit(fFitFunc1b, "RBQ0W")) break;
 
         // get results
         fPi0Pos = fFitFunc->GetParameter(1);

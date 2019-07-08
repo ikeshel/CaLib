@@ -246,14 +246,16 @@ void TCCalibPIDEnergy::FitSlices(TH2* h)
         else
         {
             range = 100;
-            peak_range = 80;
+            peak_range = 100;
             fFitFunc->SetRange(peak - range, peak + range);
+            fFitFunc->FixParameter(0, 0);
+            fFitFunc->FixParameter(1, 0);
             fFitFunc->SetParameter(2, fFitHisto->GetXaxis()->FindBin(peak));
             fFitFunc->SetParLimits(2, 0, 100000);
             fFitFunc->SetParameter(3, peak);
             fFitFunc->SetParLimits(3, peak - peak_range, peak + peak_range);
             fFitFunc->SetParameter(4, 20);
-            fFitFunc->SetParLimits(4, 18, 100);
+            fFitFunc->SetParLimits(4, 18, 150);
 
             // perform first fit
             fFitHisto->Fit(fFitFunc, "RB0Q");

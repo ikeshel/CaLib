@@ -149,7 +149,7 @@ void TCCalibEnergy::Fit(Int_t elem)
         // configure fitting function
         if (this->InheritsFrom("TCCalibCBEnergy"))
         {
-            fFitFunc->SetRange(fPi0Pos - 50, fPi0Pos + 80);
+            fFitFunc->SetRange(fPi0Pos - 10, fPi0Pos + 10);
             fFitFunc->SetParameters(fFitHisto->GetMaximum(), fPi0Pos, 11, 1, 1, 1, 0.1);
             fFitFunc->SetParLimits(1, 130, 140);
             fFitFunc->SetParLimits(2, 7, 18);
