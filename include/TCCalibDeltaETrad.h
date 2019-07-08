@@ -37,30 +37,40 @@ private:
     Double_t fProtonData;               // proton position in data
     TH1* fPionPos;                      // pion peak position histogram
     TH1* fProtonPos;                    // proton peak position histogram
-    TCLine* fLine;                      // mean indicator line
-    TCLine* fLine2;                     // mean indicator line
-    Int_t fDelay;                       // projection fit display delay
-    TH2* fMCHisto;                      // MC histogram
+    TCLine* fLinePion;                  // mean indicator line
+    TCLine* fLineProt;                  // mean indicator line
+    TCLine* fLinePionMC;                // mean indicator line
+    TCLine* fLineProtMC;                // mean indicator line
     TFile* fMCFile;                     // MC ROOT file
+    TH1* fMainHistoMC;                  // MC histogram
+    TH1* fFitHistoMC;                   // MC histogram
+    TF1* fFitFuncMC;                    // MC fitting function
 
     virtual void Init();
     virtual void Fit(Int_t elem);
     virtual void Calculate(Int_t elem);
 
-    void FitSlice(TH2* h);
+    static Double_t FitFunc(Double_t* x, Double_t* par);
+
+    void FitSlice(TH2* h, Bool_t isMC);
 
 public:
     TCCalibDeltaETrad() : TCCalib(), fFileManager(0),
                           fPedOld(0), fPedNew(0), fGainOld(0), fGainNew(0),
                           fPionMC(0), fProtonMC(0), fPionData(0), fProtonData(0),
-                          fPionPos(0), fProtonPos(0), fLine(0), fLine2(0), fDelay(0),
-                          fMCHisto(0), fMCFile(0) { }
+                          fPionPos(0), fProtonPos(0),
+                          fLinePion(0), fLineProt(0),
+                          fLinePionMC(0), fLineProtMC(0),
+                          fMCFile(0), fMainHistoMC(0), fFitHistoMC(0),
+                          fFitFuncMC(0) { }
     TCCalibDeltaETrad(const Char_t* name, const Char_t* title, const Char_t* data,
                       Int_t nElem);
     virtual ~TCCalibDeltaETrad();
 
     virtual void WriteValues();
     virtual void PrintValues();
+
+    static Double_t fgGNP;
 
     ClassDef(TCCalibDeltaETrad, 0) // DeltaE energy calibration (traditional method)
 };

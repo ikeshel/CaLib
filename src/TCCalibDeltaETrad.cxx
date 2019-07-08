@@ -29,6 +29,9 @@
 
 ClassImp(TCCalibDeltaETrad)
 
+// init static members
+Double_t TCCalibDeltaETrad::fgGNP = 10;
+
 //______________________________________________________________________________
 TCCalibDeltaETrad::TCCalibDeltaETrad(const Char_t* name, const Char_t* title, const Char_t* data,
                                      Int_t nElem)
@@ -48,11 +51,14 @@ TCCalibDeltaETrad::TCCalibDeltaETrad(const Char_t* name, const Char_t* title, co
     fProtonData = 0;
     fPionPos = 0;
     fProtonPos = 0;
-    fLine = 0;
-    fLine2 = 0;
-    fDelay = 0;
-    fMCHisto = 0;
+    fLinePion = 0;
+    fLineProt = 0;
+    fLinePionMC = 0;
+    fLineProtMC = 0;
     fMCFile = 0;
+    fMainHistoMC = 0;
+    fFitHistoMC = 0;
+    fFitFuncMC = 0;
 }
 
 //______________________________________________________________________________
@@ -67,10 +73,14 @@ TCCalibDeltaETrad::~TCCalibDeltaETrad()
     if (fGainNew) delete [] fGainNew;
     if (fPionPos) delete fPionPos;
     if (fProtonPos) delete fProtonPos;
-    if (fLine) delete fLine;
-    if (fLine2) delete fLine2;
-    if (fMCHisto) delete fMCHisto;
+    if (fLinePion) delete fLinePion;
+    if (fLineProt) delete fLineProt;
+    if (fLinePionMC) delete fLinePionMC;
+    if (fLineProtMC) delete fLineProtMC;
     if (fMCFile) delete fMCFile;
+    if (fMainHistoMC) delete fMainHistoMC;
+    if (fFitHistoMC) delete fFitHistoMC;
+    if (fFitFuncMC) delete fFitFuncMC;
 }
 
 //______________________________________________________________________________
@@ -90,17 +100,26 @@ void TCCalibDeltaETrad::Init()
     fProtonMC = 0;
     fPionData = 0;
     fProtonData = 0;
-    fLine =  new TCLine();
-    fLine2 =  new TCLine();
-    fDelay = 0;
-    fMCHisto = 0;
+    fLinePion = new TCLine();
+    fLineProt = new TCLine();
+    fLinePionMC = new TCLine();
+    fLineProtMC = new TCLine();
     fMCFile = 0;
+    fMainHistoMC = 0;
+    fFitHistoMC = 0;
+    fFitFuncMC = 0;
 
     // configure line
-    fLine->SetLineColor(kBlue);
-    fLine->SetLineWidth(3);
-    fLine2->SetLineColor(kGreen);
-    fLine2->SetLineWidth(3);
+    fLinePion->SetLineColor(kBlue);
+    fLinePion->SetLineWidth(3);
+    fLineProt->SetLineColor(kGreen);
+    fLineProt->SetLineWidth(3);
+    fLinePionMC->SetLineColor(kBlue);
+    fLinePionMC->SetLineWidth(3);
+    fLinePionMC->SetLineStyle(2);
+    fLineProtMC->SetLineColor(kGreen);
+    fLineProtMC->SetLineWidth(3);
+    fLineProtMC->SetLineStyle(2);
 
     // get histogram name
     sprintf(tmp, "%s.Histo.Fit.Name", GetName());
@@ -121,20 +140,6 @@ void TCCalibDeltaETrad::Init()
     }
     else fileMC = *TCReadConfig::GetReader()->GetConfig(tmp);
 
-    // get MC histogram name
-    TString histoMC;
-    sprintf(tmp, "%s.Histo.MC.Name", GetName());
-    if (!TCReadConfig::GetReader()->GetConfig(tmp))
-    {
-        Error("Init", "MC histogram name was not found in configuration!");
-        return;
-    }
-    else histoMC = *TCReadConfig::GetReader()->GetConfig(tmp);
-
-    // get projection fit display delay
-    sprintf(tmp, "%s.Fit.Delay", GetName());
-    fDelay = TCReadConfig::GetReader()->GetConfigInt(tmp);
-
     // read old parameters (only from first set)
     TString peds = fData;
     peds.ReplaceAll("E1", "E0");
@@ -147,7 +152,6 @@ void TCCalibDeltaETrad::Init()
 
     // draw main histogram
     fCanvasFit->Divide(1, 2, 0.001, 0.001);
-    fCanvasFit->cd(1)->SetLogz();
 
     // open the MC file
     fMCFile = new TFile(fileMC.Data());
@@ -162,25 +166,13 @@ void TCCalibDeltaETrad::Init()
         return;
     }
 
-    // load the MC histogram
-    fMCHisto = (TH2*) fMCFile->Get(histoMC.Data());
-    if (!fMCHisto)
-    {
-        Error("Init", "Could not open MC histogram!");
-        return;
-    }
-
-    // draw main histogram
-    fCanvasFit->cd(1);
-    fMCHisto->Draw("colz");
-
     // create the pion position overview histogram
-    fPionPos = new TH1F("Pion position overview", ";Element;pion peak position [MeV]", fNelem, 0, fNelem);
+    fPionPos = new TH1F("Pion position overview", ";Element;pion peak position difference [%]", fNelem, 0, fNelem);
     fPionPos->SetMarkerStyle(2);
     fPionPos->SetMarkerColor(4);
 
     // create the proton position overview histogram
-    fProtonPos = new TH1F("Proton position overview", ";Element;proton peak position [MeV]", fNelem, 0, fNelem);
+    fProtonPos = new TH1F("Proton position overview", ";Element;proton peak position difference [%]", fNelem, 0, fNelem);
     fProtonPos->SetMarkerStyle(2);
     fProtonPos->SetMarkerColor(4);
 
@@ -190,124 +182,229 @@ void TCCalibDeltaETrad::Init()
     fPionPos->Draw("P");
     fCanvasResult->cd(2);
     fProtonPos->Draw("P");
-
-    // user information
-    Info("Init", "Fitting MC data");
-
-    // perform fitting for the MC histogram
-    sprintf(tmp, "%s.Histo.Fit", GetName());
-    TCUtils::FormatHistogram(fMCHisto, tmp);
-    FitSlice(fMCHisto);
-    fCanvasFit->Update();
-    gSystem->Sleep(5000);
-
-    // user information
-    Info("Init", "Fitting of MC data finished");
 }
 
 //______________________________________________________________________________
-void TCCalibDeltaETrad::FitSlice(TH2* h)
+Double_t TCCalibDeltaETrad::FitFunc(Double_t* x, Double_t* par)
+{
+   // Source: $ROOTSYS/tutorials/fit/langaus.C
+   //
+   //Fit parameters:
+   //par[0]=exp constant
+   //par[1]=exp slope
+   //par[2]=Width (scale) parameter of Landau density
+   //par[3]=Most Probable (MP, location) parameter of Landau density
+   //par[4]=Total area (integral -inf to inf, normalization constant)
+   //par[5]=Width (sigma) of convoluted Gaussian function
+   //par[6]=gauss constant
+   //par[7]=gauss mean
+   //par[8]=gauss sigma
+   //
+   //In the Landau distribution (represented by the CERNLIB approximation),
+   //the maximum is located at x=-0.22278298 with the location parameter=0.
+   //This shift is corrected within this function, so that the actual
+   //maximum is identical to the MP parameter.
+
+      // Numeric constants
+      Double_t invsq2pi = 0.3989422804014;   // (2 pi)^(-1/2)
+      Double_t mpshift  = -0.22278298;       // Landau maximum location
+
+      // Control constants
+      Double_t sc =   4.0;      // convolution extends to +-sc Gaussian sigmas
+
+      // Variables
+      Double_t xx;
+      Double_t mpc;
+      Double_t fland;
+      Double_t sum = 0.0;
+      Double_t xlow,xupp;
+      Double_t step;
+      Double_t i;
+
+
+      // MP shift correction
+      mpc = par[3] - mpshift * par[2];
+
+      // Range of convolution integral
+      xlow = x[0] - sc * par[5];
+      xupp = x[0] + sc * par[5];
+
+      step = (xupp-xlow) / fgGNP;
+
+      // Convolution integral of Landau and Gaussian by sum
+      for(i=1.0; i<=fgGNP/2; i++) {
+         xx = xlow + (i-.5) * step;
+         fland = TMath::Landau(xx,mpc,par[2]);
+         sum += fland * TMath::Gaus(x[0],xx,par[5]);
+
+         xx = xupp - (i-.5) * step;
+         fland = TMath::Landau(xx,mpc,par[2]);
+         sum += fland * TMath::Gaus(x[0],xx,par[5]);
+      }
+
+    Double_t out = (par[4] * step * sum * invsq2pi / par[3]);
+    out += TMath::Exp(par[0] + par[1]*x[0]);
+    out += par[6] * TMath::Gaus(x[0], par[7], par[8]);
+    return out;
+}
+
+//______________________________________________________________________________
+void TCCalibDeltaETrad::FitSlice(TH2* h, Bool_t isMC)
 {
     // Fit the energy slice of the dE vs E histogram 'h'.
 
     Char_t tmp[256];
 
+    // only refit if line was moved
+    if (fIsReFit)
+    {
+        if (isMC)
+        {
+            if (fLinePionMC->GetPos() == fPionMC && fLineProtMC->GetPos() == fProtonMC)
+                return;
+        }
+        else
+        {
+            if (fLinePion->GetPos() == fPionData && fLineProt->GetPos() == fProtonData)
+                return;
+         }
+    }
+
     // get configuration
     Double_t lowLimit, highLimit;
-    sprintf(tmp, "%s.Fit.Range", GetName());
+    sprintf(tmp, "%s.Fit.Range.ClEnergy", GetName());
     TCReadConfig::GetReader()->GetConfigDoubleDouble(tmp, &lowLimit, &highLimit);
     Int_t firstBin = h->GetXaxis()->FindBin(lowLimit);
     Int_t lastBin = h->GetXaxis()->FindBin(highLimit);
 
     // create projection
-    sprintf(tmp, "%s_Proj", h->GetName());
-    if (fFitHisto) delete fFitHisto;
-    fFitHisto = (TH1D*) h->ProjectionY(tmp, firstBin, lastBin, "e");
-
-    // look for peaks
-    if (this->InheritsFrom("TCCalibPizzaEnergyTrad") && h != fMCHisto)
+    TH1* fitHisto;
+    if (isMC)
     {
-        fPionData = fPionMC;
-        fProtonData = fProtonMC;
+        sprintf(tmp, "%s_Proj_MC", h->GetName());
+        if (fFitHistoMC) delete fFitHistoMC;
+        fFitHistoMC = (TH1D*) h->ProjectionY(tmp, firstBin, lastBin, "e");
+        fitHisto = fFitHistoMC;
     }
     else
     {
-        TSpectrum s;
-        s.Search(fFitHisto, 10, "goff nobackground", 0.05);
-        fPionData = TMath::MinElement(s.GetNPeaks(), s.GetPositionX());
-        fProtonData = TMath::MaxElement(s.GetNPeaks(), s.GetPositionX());
+        sprintf(tmp, "%s_Proj", h->GetName());
+        if (fFitHisto) delete fFitHisto;
+        fFitHisto = (TH1D*) h->ProjectionY(tmp, firstBin, lastBin, "e");
+        fitHisto = fFitHisto;
     }
 
+    // look for peaks
+    TSpectrum s;
+    s.Search(fitHisto, 10, "goff nobackground", 0.05);
+    Double_t pionPos = TMath::MinElement(s.GetNPeaks(), s.GetPositionX());
+    Double_t protonPos = TMath::MaxElement(s.GetNPeaks(), s.GetPositionX());
+
     // create fitting function
-    if (fFitFunc) delete fFitFunc;
-    sprintf(tmp, "fFunc_%s", h->GetName());
-    fFitFunc = new TF1(tmp, "expo(0)+landau(2)+gaus(5)", 0.2*fPionData, fProtonData+5);
-    fFitFunc->SetLineColor(2);
+    TF1* fitfunc;
+    if (isMC)
+    {
+        if (fFitFuncMC) delete fFitFuncMC;
+        sprintf(tmp, "fFunc_MC_%s", h->GetName());
+        fFitFuncMC = new TF1(tmp, FitFunc, 0.4, protonPos+5, 9);
+        fFitFuncMC->SetLineColor(2);
+        fitfunc = fFitFuncMC;
+    }
+    else
+    {
+        if (fFitFunc) delete fFitFunc;
+        sprintf(tmp, "fFunc_%s", h->GetName());
+        fFitFunc = new TF1(tmp, FitFunc, 0.2*pionPos, protonPos+5, 9);
+        fFitFunc->SetLineColor(2);
+        fitfunc = fFitFunc;
+    }
 
     // apply re-fit
     if (fIsReFit)
     {
-        fPionData = fLine->GetPos();
-        fProtonData = fLine2->GetPos();
+        if (isMC)
+        {
+            pionPos = fLinePionMC->GetPos();
+            protonPos = fLineProtMC->GetPos();
+        }
+        else
+        {
+            pionPos = fLinePion->GetPos();
+            protonPos = fLineProt->GetPos();
+        }
+        fgGNP = 100;
+    }
+    else
+    {
+        fgGNP = 10;
     }
 
     // prepare fitting function
-    fFitFunc->SetParameters(9.25568, -3.76050e-01,
-                            5e+03, fPionData, 2.62472e-01,
-                            6e+03, fProtonData, 5.82477);
-    fFitFunc->SetParLimits(2, 0, 1e6);
-    fFitFunc->SetParLimits(3, 0.85*fPionData, 1.15*fPionData);
-    fFitFunc->SetParLimits(6, 0.85*fProtonData, 1.15*fProtonData);
-    fFitFunc->SetParLimits(5, 0, 1e5);
-    fFitFunc->SetParLimits(4, 0.1, 5);
-    fFitFunc->SetParLimits(7, 0.1, 10);
+    fitfunc->SetParameters(9, -3.76050e-01,
+                           10, pionPos, 100, 0.3,
+                           10, protonPos, 0.4);
+    fitfunc->SetParLimits(2, 0, 1e6);
+    fitfunc->SetParLimits(3, 0.85*pionPos, 1.15*pionPos);
+    fitfunc->SetParLimits(4, 10, 1e6);
+    fitfunc->SetParLimits(5, 0.1, 2);
+    fitfunc->SetParLimits(6, 0, 1e5);
+    fitfunc->SetParLimits(7, 0.85*protonPos, 1.15*protonPos);
+    fitfunc->SetParLimits(8, 0.1, 2);
 
     // fit
     for (Int_t i = 0; i < 10; i++)
-        if (!fFitHisto->Fit(fFitFunc, "RB0Q")) break;
+        if (!fitHisto->Fit(fitfunc, "RB0Q")) break;
 
     // reset range for second fit
-    if (h != fMCHisto)
-    {
-        Double_t start;
-        if (h == fMCHisto) start = 0.05;
-        else start = fFitFunc->GetParameter(3) - 2.5*fFitFunc->GetParameter(4);
-        fFitFunc->SetRange(start, fFitFunc->GetParameter(6) + 4*fFitFunc->GetParameter(7));
+    Double_t start = isMC ? fitfunc->GetParameter(3)-2.5*fitfunc->GetParameter(5)
+                          : fitfunc->GetParameter(3)-3*fitfunc->GetParameter(5);
+    fitfunc->SetRange(start, fitfunc->GetParameter(7) + 4*fitfunc->GetParameter(8));
 
-        // second fit
-        for (Int_t i = 0; i < 10; i++)
-            if (!fFitHisto->Fit(fFitFunc, "RB0Q")) break;
-    }
+    // second fit
+    for (Int_t i = 0; i < 10; i++)
+        if (!fitHisto->Fit(fitfunc, "RB0Q")) break;
 
     // get positions
-    fPionData = fFitFunc->GetParameter(3);
-    fProtonData = fFitFunc->GetParameter(6);
+    pionPos = fitfunc->GetParameter(3);
+    protonPos = fitfunc->GetParameter(7);
 
     // correct weird fits
-    if (fPionData < fFitHisto->GetXaxis()->GetXmin() || fPionData > fFitHisto->GetXaxis()->GetXmax())
-        fPionData = (fFitHisto->GetXaxis()->GetXmin() + fFitHisto->GetXaxis()->GetXmax()) / 2;
-    if (fProtonData < fFitHisto->GetXaxis()->GetXmin() || fProtonData > fFitHisto->GetXaxis()->GetXmax())
-        fProtonData = (fFitHisto->GetXaxis()->GetXmin() + fFitHisto->GetXaxis()->GetXmax()) / 2;
+    if (pionPos < fitHisto->GetXaxis()->GetXmin() || pionPos > fitHisto->GetXaxis()->GetXmax())
+        pionPos = (fitHisto->GetXaxis()->GetXmin() + fitHisto->GetXaxis()->GetXmax()) / 2;
+    if (protonPos < fitHisto->GetXaxis()->GetXmin() || protonPos > fitHisto->GetXaxis()->GetXmax())
+        protonPos = (fitHisto->GetXaxis()->GetXmin() + fitHisto->GetXaxis()->GetXmax()) / 2;
 
-    // format line
-    fLine->SetPos(fPionData);
-
-    // format line
-    fLine2->SetPos(fProtonData);
-
-    // plot histogram and line
-    fCanvasFit->cd(2);
-    fFitHisto->GetXaxis()->SetRangeUser(0, fFitFunc->GetParameter(6) + 4*fFitFunc->GetParameter(7));
-    fFitHisto->Draw("hist");
-    fFitFunc->Draw("same");
-    fLine->Draw();
-    fLine2->Draw();
-
-    // save MC data
-    if (h == fMCHisto)
+    // format and plot stuff
+    if (isMC)
     {
-        fPionMC = fPionData;
-        fProtonMC = fProtonData;
+        fPionMC = pionPos;
+        fProtonMC = protonPos;
+        fLinePionMC->SetPos(pionPos);
+        fLineProtMC->SetPos(protonPos);
+        fCanvasFit->cd(1);
+    }
+    else
+    {
+        fPionData = pionPos;
+        fProtonData = protonPos;
+        fLinePion->SetPos(pionPos);
+        fLineProt->SetPos(protonPos);
+        fCanvasFit->cd(2);
+    }
+
+    // draw histogram
+    fitHisto->GetXaxis()->SetRangeUser(0, fitfunc->GetParameter(7) + 4*fitfunc->GetParameter(8));
+    fitHisto->Draw("hist");
+    fitfunc->Draw("same");
+    if (isMC)
+    {
+        fLinePionMC->Draw();
+        fLineProtMC->Draw();
+    }
+    else
+    {
+        fLinePion->Draw();
+        fLineProt->Draw();
     }
 
     fCanvasFit->Update();
@@ -331,11 +428,25 @@ void TCCalibDeltaETrad::Fit(Int_t elem)
         return;
     }
 
-    // create 2D projection if necessary
+    // load the MC histogram
+    TH1* hmainMC = (TH1*) fMCFile->Get(tmp);
+    if (!hmainMC)
+    {
+        Error("Init", "Could not open MC histogram!");
+        return;
+    }
+
+    // get configuration
+    Double_t lowLimit, highLimit;
+    sprintf(tmp, "%s.Fit.Range.DetPos", GetName());
+    TCReadConfig::GetReader()->GetConfigDoubleDouble(tmp, &lowLimit, &highLimit);
+
+    // create 2D projection if necessary (data)
     if (fMainHisto) delete fMainHisto;
     if (hmain->InheritsFrom("TH3"))
     {
-        sprintf(tmp, "%02d_yxe", elem);
+        sprintf(tmp, "%02d_Data_yxe", elem);
+        hmain->GetZaxis()->SetRangeUser(lowLimit, highLimit);
         fMainHisto = (TH2D*) ((TH3*)hmain)->Project3D(tmp);
         fMainHisto->SetTitle(tmp);
         delete hmain;
@@ -351,18 +462,33 @@ void TCCalibDeltaETrad::Fit(Int_t elem)
         return;
     }
 
-    // draw main histogram
-    fCanvasFit->cd(1);
-    sprintf(tmp, "%s.Histo.Fit", GetName());
-    TCUtils::FormatHistogram(fMainHisto, tmp);
-    fMainHisto->Draw("colz");
-    fCanvasFit->Update();
+    // create 2D projection if necessary (MC)
+    if (fMainHistoMC) delete fMainHistoMC;
+    if (hmainMC->InheritsFrom("TH3"))
+    {
+        sprintf(tmp, "%02d_MC_yx", elem);
+        hmainMC->GetZaxis()->SetRangeUser(lowLimit, highLimit);
+        fMainHistoMC = (TH2D*) ((TH3*)hmainMC)->Project3D(tmp);
+        fMainHistoMC->SetTitle(tmp);
+        delete hmainMC;
+    }
+    else if (hmainMC->InheritsFrom("TH2"))
+    {
+        fMainHistoMC = hmainMC;
+    }
+    else
+    {
+        Error("Init", "Main MC histogram has to be either TH3 or TH2!\n");
+        delete hmainMC;
+        return;
+    }
 
     // check for sufficient statistics
     if (fMainHisto->GetEntries())
     {
         // fit the energy slices
-        FitSlice((TH2*)fMainHisto);
+        FitSlice((TH2*)fMainHistoMC, kTRUE);
+        FitSlice((TH2*)fMainHisto, kFALSE);
     }
 
     // update overview
@@ -384,8 +510,10 @@ void TCCalibDeltaETrad::Calculate(Int_t elem)
     if (fMainHisto->GetEntries())
     {
         // check if line position was modified by hand
-        if (fLine->GetPos() != fPionData) fPionData = fLine->GetPos();
-        if (fLine2->GetPos() != fProtonData) fProtonData = fLine2->GetPos();
+        if (fLinePion->GetPos() != fPionData) fPionData = fLinePion->GetPos();
+        if (fLineProt->GetPos() != fProtonData) fProtonData = fLineProt->GetPos();
+        if (fLinePionMC->GetPos() != fPionMC) fPionMC = fLinePionMC->GetPos();
+        if (fLineProtMC->GetPos() != fProtonMC) fProtonMC = fLineProtMC->GetPos();
 
         // calculate adc values of data fits
         Double_t adc_pion = fPionData/fGainOld[elem] + fPedOld[elem];
@@ -396,9 +524,9 @@ void TCCalibDeltaETrad::Calculate(Int_t elem)
         fGainNew[elem] = fProtonMC/(adc_proton - fPedNew[elem]);
 
         // update overview histograms
-        fPionPos->SetBinContent(elem+1, fPionData);
+        fPionPos->SetBinContent(elem+1, 100*(fPionData-fPionMC)/fPionMC );
         fPionPos->SetBinError(elem+1, 0.0000001);
-        fProtonPos->SetBinContent(elem+1, fProtonData);
+        fProtonPos->SetBinContent(elem+1, 100*(fProtonData-fProtonMC)/fProtonMC);
         fProtonPos->SetBinError(elem+1, 0.0000001);
     }
     else
@@ -407,8 +535,8 @@ void TCCalibDeltaETrad::Calculate(Int_t elem)
     }
 
     // user information
-    printf("Element: %03d    Pion: %12.8f    Proton: %12.8f    Pedestal: %12.8f (%+2.1f)  Gain: %12.8f (%+2.1f)",
-           elem, fPionData, fProtonData,
+    printf("Element: %03d    Pion: %.2f (MC: %.2f)   Proton: %.2f (MC: %.2f)   Pedestal: %12.8f (%+2.1f)  Gain: %12.8f (%+2.1f)",
+           elem, fPionData, fPionMC, fProtonData, fProtonMC,
            fPedNew[elem], TCUtils::GetDiffPercent(fPedOld[elem], fPedNew[elem]),
            fGainNew[elem], TCUtils::GetDiffPercent(fGainOld[elem], fGainNew[elem]));
     if (noval) printf("    -> no fit");
