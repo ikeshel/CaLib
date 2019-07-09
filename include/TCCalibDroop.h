@@ -20,24 +20,21 @@
 class TH2;
 class TH3;
 class TGraph;
-class TLine;
-class TFile;
+class TCLine;
 class TCFileManager;
 
 class TCCalibDroop : public TCCalib
 {
 
 private:
-    TFile* fOutFile;                    // output file
     TCFileManager* fFileManager;        // file manager
     TH2* fProj2D;                       // dE vs E projection
-    TGraph* fLinPlot;                   // linear fitting histogram
+    TGraph** fLinPlot;                  // correction graphs
     Int_t fNpeak;                       // number of proton peaks
     Int_t fNpoint;                      // number of points in graph
     Double_t* fPeak;                    //[fNpeak] proton peak positions
     Double_t* fTheta;                   //[fNpeak] theta positions
-    TLine* fLine;                       // mean indicator line
-    Int_t fDelay;                       // projection fit display delay
+    TCLine** fLine;                     // mean indicator lines
 
     virtual void Init();
     virtual void Fit(Int_t elem);
@@ -47,9 +44,9 @@ private:
     void FitSlices(TH3* h, Int_t elem);
 
 public:
-    TCCalibDroop() : TCCalib(), fOutFile(0), fFileManager(0), fProj2D(0),
+    TCCalibDroop() : TCCalib(), fFileManager(0), fProj2D(0),
                      fLinPlot(0), fNpeak(0), fNpoint(0), fPeak(0), fTheta(0),
-                     fLine(0), fDelay(0) { }
+                     fLine(0) { }
     TCCalibDroop(const Char_t* name, const Char_t* title, const Char_t* data,
                  Int_t nElem);
     virtual ~TCCalibDroop();

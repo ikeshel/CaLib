@@ -17,7 +17,6 @@
 #include "TSpectrum.h"
 #include "TF1.h"
 #include "TGraph.h"
-#include "TLine.h"
 #include "TCanvas.h"
 #include "TMath.h"
 #include "TSystem.h"
@@ -26,6 +25,7 @@
 #include "TCFileManager.h"
 #include "TCReadConfig.h"
 #include "TCUtils.h"
+#include "TCLine.h"
 
 ClassImp(TCCalibDroop)
 
@@ -37,7 +37,6 @@ TCCalibDroop::TCCalibDroop(const Char_t* name, const Char_t* title, const Char_t
     // Constructor.
 
     // init members
-    fOutFile = 0;
     fFileManager = 0;
     fProj2D = 0;
     fLinPlot = 0;
@@ -46,7 +45,6 @@ TCCalibDroop::TCCalibDroop(const Char_t* name, const Char_t* title, const Char_t
     fPeak = 0;
     fTheta = 0;
     fLine = 0;
-    fDelay = 0;
 }
 
 //______________________________________________________________________________
@@ -54,19 +52,23 @@ TCCalibDroop::~TCCalibDroop()
 {
     // Destructor.
 
-    // close the output file
-    if (fOutFile)
-    {
-        Info("Calculate", "Closing output file '%s'", fOutFile->GetName());
-        delete fOutFile;
-    }
-
     if (fFileManager) delete fFileManager;
     if (fProj2D) delete fProj2D;
-    if (fLinPlot) delete fLinPlot;
+    if (fLinPlot)
+    {
+        for (Int_t i = 0; i < fNelem; i++)
+            if (fLinPlot[i])
+                delete fLinPlot[i];
+        delete [] fLinPlot;
+    }
     if (fPeak) delete [] fPeak;
     if (fTheta) delete [] fTheta;
-    if (fLine) delete fLine;
+    if (fLine)
+    {
+        for (Int_t i = 0; i < fNpeak+1; i++)
+            delete fLine[i];
+        delete [] fLine;
+    }
 }
 
 //______________________________________________________________________________
@@ -79,32 +81,14 @@ void TCCalibDroop::Init()
     // init members
     fFileManager = new TCFileManager(fData, fCalibration.Data(), fNset, fSet);
     fProj2D = 0;
-    fLinPlot = 0;
+    fLinPlot = new TGraph*[fNelem];
+    for (Int_t i = 0; i < fNelem; i++)
+        fLinPlot[i] = 0;
     fNpeak = 0;
     fNpoint = 0;
     fPeak = 0;
     fTheta = 0;
-    fLine = new TLine();
-    fDelay = 0;
-
-    // try to open the output file
-    TString str = GetName();
-    str.ReplaceAll(".Droop", "");
-    sprintf(tmp, "%s_Droop_Corr_%s.root", str.Data(), fCalibration.Data());
-    fOutFile = new TFile(tmp, "update");
-    if (fOutFile->IsZombie())
-    {
-        Error("Init", "Could not create output file '%s'!", tmp);
-        return;
-    }
-    else
-    {
-        Info("Init", "Opening output file '%s'", tmp);
-    }
-
-    // configure line
-    fLine->SetLineColor(4);
-    fLine->SetLineWidth(3);
+    fLine = 0;
 
     // get histogram name
     sprintf(tmp, "%s.Histo.Fit.Name", GetName());
@@ -114,14 +98,6 @@ void TCCalibDroop::Init()
         return;
     }
     else fHistoName = *TCReadConfig::GetReader()->GetConfig(tmp);
-
-    // get projection fit display delay
-    sprintf(tmp, "%s.Fit.Delay", GetName());
-    fDelay = TCReadConfig::GetReader()->GetConfigInt(tmp);
-
-    // draw main histogram
-    fCanvasFit->Divide(1, 2, 0.001, 0.001);
-    fCanvasFit->cd(1)->SetLogz();
 }
 
 //______________________________________________________________________________
@@ -158,7 +134,6 @@ Bool_t TCCalibDroop::FitHisto(Double_t* outPeak)
     }
 
     // create fitting function
-    if (fFitFunc) delete fFitFunc;
     fFitFunc = new TF1("Fitfunc", "expo(0)+landau(2)+gaus(5)", 0.1*peakPion, fmax);
     fFitFunc->SetLineColor(2);
 
@@ -194,37 +169,53 @@ Bool_t TCCalibDroop::FitHisto(Double_t* outPeak)
 //______________________________________________________________________________
 void TCCalibDroop::FitSlices(TH3* h, Int_t elem)
 {
-    // Fit the theta slices of the dE vs E histogram 'h'.
+    // Fit the slices of the dE vs E histogram 'h'.
 
     Char_t tmp[256];
 
     // get configuration
     Double_t lowLimit, highLimit;
     Double_t lowEnergy, highEnergy;
+    Double_t pos_norm_min, pos_norm_max;
     TCReadConfig::GetReader()->GetConfigDoubleDouble(TString::Format("%s.Fit.Range", GetName()).Data(), &lowLimit, &highLimit);
     TCReadConfig::GetReader()->GetConfigDoubleDouble(TString::Format("%s.Fit.Energy.Range", GetName()).Data(), &lowEnergy, &highEnergy);
     Double_t interval = TCReadConfig::GetReader()->GetConfigDouble(TString::Format("%s.Fit.Interval", GetName()).Data());
+    TCReadConfig::GetReader()->GetConfigDoubleDouble(TString::Format("%s.Fit.Range.DetPos.Norm", GetName()).Data(), &pos_norm_min, &pos_norm_max);
 
     // count points
     fNpeak = (highLimit - lowLimit) / interval;
     fNpoint = 0;
 
+    // prepare canvas
+    if (!fPeak)
+        fCanvasFit->Divide(fNpeak+1, 2, 0.001, 0.001);
+
     // prepare arrays
     if (!fPeak) fPeak = new Double_t[fNpeak];
     if (!fTheta) fTheta = new Double_t[fNpeak];
+
+    // create lines
+    if (!fLine)
+        fLine = new TCLine*[fNpeak+1];
+    for (Int_t i = 0; i < fNpeak+1; i++)
+    {
+        fLine[i] = new TCLine();
+        fLine[i]->SetLineColor(4);
+        fLine[i]->SetLineWidth(3);
+    }
 
     //
     // get global proton position
     //
 
     // create 2D projection
-    if (fProj2D) delete fProj2D;
+    Info("FitSlices", "Position interval for normalization: [%.1f,%.1f]", pos_norm_min, pos_norm_max);
+    h->GetZaxis()->SetRangeUser(pos_norm_min, pos_norm_max);
     fProj2D = (TH2D*) h->Project3D("Proj2DTot_yxe");
-    sprintf(tmp, "%02d total", elem);
+    sprintf(tmp, "%02d total (%.1f < pos < %.1f)", elem, pos_norm_min, pos_norm_max);
     fProj2D->SetTitle(tmp);
 
     // create 1D projection
-    if (fFitHisto) delete fFitHisto;
     Int_t firstBin = fProj2D->GetXaxis()->FindBin(lowEnergy);
     Int_t lastBin = fProj2D->GetXaxis()->FindBin(highEnergy);
     fFitHisto = (TH1D*) fProj2D->ProjectionY("ProjTot", firstBin, lastBin, "e");
@@ -236,54 +227,44 @@ void TCCalibDroop::FitSlices(TH3* h, Int_t elem)
     FitHisto(&peakTotal);
 
     // format line
-    fLine->SetY1(0);
-    fLine->SetY2(fFitHisto->GetMaximum() + 20);
-    fLine->SetX1(peakTotal);
-    fLine->SetX2(peakTotal);
+    fLine[0]->SetPos(peakTotal);
 
     // plot projection fit
-    if (fDelay > 0)
-    {
-        TCUtils::FormatHistogram(fProj2D, TString::Format("%s.Histo.Fit", GetName()).Data());
-        fCanvasFit->cd(1);
-        fProj2D->Draw("colz");
-        fFitHisto->GetXaxis()->SetRangeUser(0, peakTotal+3);
-        fCanvasFit->cd(2);
-        fFitHisto->Draw("hist");
-        fFitFunc->Draw("same");
-        fLine->Draw();
-        fCanvasFit->Update();
-        gSystem->Sleep(2000);
-    }
-
+    TCUtils::FormatHistogram(fProj2D, TString::Format("%s.Histo.Fit", GetName()).Data());
+    fCanvasFit->cd(1)->SetLogz();
+    fProj2D->Draw("colz");
+    fFitHisto->GetXaxis()->SetRangeUser(0, peakTotal+3);
+    fCanvasFit->cd(fNpeak+2);
+    fFitHisto->Draw("hist");
+    fFitFunc->Draw("same");
+    fLine[0]->Draw();
 
     //
-    // loop over theta slices
+    // loop over slices
     //
     Double_t start = lowLimit;
+    Int_t n = 0;
     while (start < highLimit)
     {
-        // set theta axis range
+        // set axis range
         h->GetZaxis()->SetRangeUser(start, start + interval);
 
         // create 2D projection
-        if (fProj2D) delete fProj2D;
         sprintf(tmp, "Proj2D_%d_yxe", (Int_t)start);
         fProj2D = (TH2D*) h->Project3D(tmp);
         if (this->InheritsFrom("TCCalibPIDDroop"))
-            sprintf(tmp, "%02d dE vs E : %.f < #theta < %.f", elem, start, start + interval);
+            sprintf(tmp, "%02d dE vs E : %.f < pos_{scint} < %.f", elem, start, start + interval);
         else if (this->InheritsFrom("TCCalibPizzaDroop"))
             sprintf(tmp, "%02d dE vs E : %.f < r_{paddle} < %.f", elem, start, start + interval);
         fProj2D->SetTitle(tmp);
 
         // create 1D projection
-        if (fFitHisto) delete fFitHisto;
         sprintf(tmp, "Proj_%d", (Int_t)start);
         Int_t firstBin = fProj2D->GetXaxis()->FindBin(lowEnergy);
         Int_t lastBin = fProj2D->GetXaxis()->FindBin(highEnergy);
         fFitHisto = (TH1D*) fProj2D->ProjectionY(tmp, firstBin, lastBin, "e");
         if (this->InheritsFrom("TCCalibPIDDroop"))
-            sprintf(tmp, "%02d dE : %.f < #theta < %.f, %.f < E < %.f", elem, start, start + interval,
+            sprintf(tmp, "%02d dE : %.f < pos_{scint} < %.f, %.f < E < %.f", elem, start, start + interval,
                                                                         lowEnergy, highEnergy);
         else if (this->InheritsFrom("TCCalibPizzaDroop"))
             sprintf(tmp, "%02d dE : %.f < r_{paddle} < %.f, %.f < E < %.f", elem, start, start + interval,
@@ -298,12 +279,9 @@ void TCCalibDroop::FitSlices(TH3* h, Int_t elem)
         if (fitRes)
         {
             // format line
-            fLine->SetY1(0);
-            fLine->SetY2(fFitHisto->GetMaximum() + 20);
-            fLine->SetX1(peak);
-            fLine->SetX2(peak);
+            fLine[n+1]->SetPos(peak);
 
-            // save peak and theta position
+            // save peak and position
             if (this->InheritsFrom("TCCalibPIDDroop"))
                 fPeak[fNpoint] = peak / peakTotal;
             else if (this->InheritsFrom("TCCalibPizzaDroop"))
@@ -315,27 +293,25 @@ void TCCalibDroop::FitSlices(TH3* h, Int_t elem)
         }
 
         // plot projection fit
-        if (fDelay > 0)
+        TCUtils::FormatHistogram(fProj2D, TString::Format("%s.Histo.Fit", GetName()).Data());
+        fCanvasFit->cd(n+2)->SetLogz();
+        fProj2D->Draw("colz");
+        fFitHisto->GetXaxis()->SetRangeUser(0, peak+4);
+        fCanvasFit->cd(fNpeak+n+3);
+        fFitHisto->Draw("hist");
+        if (fitRes)
         {
-            TCUtils::FormatHistogram(fProj2D, TString::Format("%s.Histo.Fit", GetName()).Data());
-            fCanvasFit->cd(1);
-            fProj2D->Draw("colz");
-            fFitHisto->GetXaxis()->SetRangeUser(0, peak+4);
-            fCanvasFit->cd(2);
-            fFitHisto->Draw("hist");
-            if (fitRes)
-            {
-                fFitFunc->Draw("same");
-                fLine->Draw();
-            }
-            fCanvasFit->Update();
-            gSystem->Sleep(fDelay);
+            fFitFunc->Draw("same");
+            fLine[n+1]->Draw();
         }
 
         // increment loop variables
         start += interval;
+        n++;
 
      } // while: loop over energy slices
+
+     fCanvasFit->Update();
 }
 
 //______________________________________________________________________________
@@ -362,7 +338,7 @@ void TCCalibDroop::Fit(Int_t elem)
     // check for sufficient statistics
     if (fMainHisto->GetEntries())
     {
-        // fit the theta slices
+        // fit the slices
         FitSlices((TH3*)fMainHisto, elem);
 
         // normalize peak positions
@@ -373,29 +349,29 @@ void TCCalibDroop::Fit(Int_t elem)
         }
 
         // create linear plot
-        if (fLinPlot) delete fLinPlot;
-        fLinPlot = new TGraph(fNpoint, fTheta, fPeak);
+        if (fLinPlot[elem]) delete fLinPlot[elem];
+        fLinPlot[elem] = new TGraph(fNpoint, fTheta, fPeak);
         sprintf(tmp, "Droop_Corr_%02d", elem);
-        fLinPlot->SetName(tmp);
-        fLinPlot->SetTitle(tmp);
+        fLinPlot[elem]->SetName(tmp);
+        fLinPlot[elem]->SetTitle(tmp);
         if (this->InheritsFrom("TCCalibPIDDroop"))
         {
-            fLinPlot->GetXaxis()->SetTitle("CB Cluster theta angle [deg]");
-            fLinPlot->GetYaxis()->SetTitle("bin proton peak pos. / total proton peak pos.");
+            fLinPlot[elem]->GetXaxis()->SetTitle("PID scintillator position [mm]");
+            fLinPlot[elem]->GetYaxis()->SetTitle("bin proton peak pos. / total proton peak pos.");
         }
         else if (this->InheritsFrom("TCCalibPizzaDroop"))
         {
-            fLinPlot->GetXaxis()->SetTitle("Pizza paddle radius [cm]");
-            fLinPlot->GetYaxis()->SetTitle("bin proton peak pos. / bin 0 proton peak pos.");
+            fLinPlot[elem]->GetXaxis()->SetTitle("Pizza paddle radius [cm]");
+            fLinPlot[elem]->GetYaxis()->SetTitle("bin proton peak pos. / bin 0 proton peak pos.");
         }
-        fLinPlot->SetMarkerStyle(20);
-        fLinPlot->SetMarkerSize(1);
-        fLinPlot->SetMarkerColor(kBlue);
-        fLinPlot->GetYaxis()->SetRangeUser(0.5, 1.5);
+        fLinPlot[elem]->SetMarkerStyle(20);
+        fLinPlot[elem]->SetMarkerSize(1);
+        fLinPlot[elem]->SetMarkerColor(kBlue);
+        fLinPlot[elem]->GetYaxis()->SetRangeUser(0.5, 1.5);
 
         // plot linear plot
         fCanvasResult->cd();
-        fLinPlot->Draw("ap");
+        fLinPlot[elem]->Draw("ap");
         fCanvasResult->Update();
 
     } // if: sufficient statistics
@@ -421,16 +397,25 @@ void TCCalibDroop::WriteValues()
 {
     // Write to output file instead of database.
 
-    // check if output file exits
-    if (!fOutFile)
+    // try to open the output file
+    TString str = GetName();
+    str.ReplaceAll(".Droop", "");
+    str += TString::Format("_Droop_Corr_%s.root", fCalibration.Data());
+    TFile* fout = new TFile(str.Data(), "recreate");
+    if (fout->IsZombie())
     {
-        Error("Write", "Cannot save droop correction to output file!");
+        Error("Init", "Could not create output file '%s'!", str.Data());
         return;
     }
 
     // save TGraph to output file
-    fOutFile->cd();
-    fLinPlot->Write();
-    Info("Write", "Droop correction '%s' was written to '%s'", fLinPlot->GetName(), fOutFile->GetName());
+    fout->cd();
+    for (Int_t i = 0; i < fNelem; i++)
+        if (fLinPlot[i])
+            fLinPlot[i]->Write();
+    Info("Write", "Droop corrections written to '%s'", fout->GetName());
+
+    // close file
+    delete fout;
 }
 
