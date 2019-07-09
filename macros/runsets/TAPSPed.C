@@ -214,10 +214,10 @@ void TAPSPed()
     //const Char_t* elemDesc = "TAPSSG:";
     Double_t yMin = 110;
     Double_t yMax = 160;
-    const Char_t calibration[] = "LH2_May_18";
-    const Char_t* fLoc = "$HOME/loc/presort/data/May_18";
-    //const Char_t* fAR = "/home/werthm/src/ROOT/acqu/acqu_user/data/May_18/TAPS/BaF2_PWO.dat";
-    const Char_t* fAR = "/home/werthm/src/ROOT/acqu/acqu_user/data/May_18/TAPS/Veto.dat";
+    const Char_t calibration[] = "Solid_Nov_18";
+    const Char_t* fLoc = "$HOME/loc/presort/data/Nov_18/adc";
+    //const Char_t* fAR = "/home/werthm/src/ROOT/acqu/acqu_user/data/Nov_18/TAPS/BaF2_PWO.dat";
+    const Char_t* fAR = "/home/werthm/src/ROOT/acqu/acqu_user/data/Nov_18/TAPS/Veto.dat";
     const Char_t* filePre = "ARHistograms_CBTaggTAPS";
 
     // read the calibration file with the correct element identifier

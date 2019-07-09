@@ -19,7 +19,7 @@ void WriteCFDThrTAPS(const Char_t* thrFile)
     gSystem->Load("libCaLib.so");
 
     // configuration
-    const Char_t* calibration = "LH2_May_18";
+    const Char_t* calibration = "Solid_Nov_18";
     const Int_t e_calib_set   = 0;
     const Int_t cfd_calib_set = 0;
 

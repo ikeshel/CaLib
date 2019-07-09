@@ -68,8 +68,8 @@ void CBEnergy()
     const Char_t* hName = "CaLib_CB_IM_Neut";
 
     // configuration
-    const Char_t calibration[] = "LH2_May_18";
-    const Char_t filePat[] = "$HOME/loc/presort/data/May_18/ARHistograms_CBTaggTAPS_RUN.root";
+    const Char_t calibration[] = "Solid_Nov_18";
+    const Char_t filePat[] = "$HOME/loc/presort/data/Nov_18/adc/ARHistograms_CBTaggTAPS_RUN.root";
 
     // get number of sets
     Int_t nSets = TCMySQLManager::GetManager()->GetNsets(data, calibration);

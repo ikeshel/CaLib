@@ -19,8 +19,8 @@ void AddRuns()
 
     // macro configuration: just change here for your needs and leave
     // the other parts of the code unchanged
-    const Char_t rawfilePath[]      = "/home/werthm/loc/raw/Dec_14";
-    const Char_t target[]           = "LH2";
+    const Char_t rawfilePath[]      = "/home/werthm/loc/raw/Jan_19";
+    const Char_t target[]           = "Solid_Jan_19";
 
     // add raw files to the database
     TCMySQLManager::GetManager()->AddRunFiles(rawfilePath, target, "CBTaggTAPS");

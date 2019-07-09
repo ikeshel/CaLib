@@ -19,9 +19,9 @@ void AddMCRun()
 
     // macro configuration: just change here for your beamtime and leave
     // the other parts of the code unchanged
-    const Char_t target[]           = "H-Butanol";
-    const Int_t dummyRun            = 999004;
-    const Char_t calibDesc[]        = "MC calibration for May 2010 beamtime";
+    const Char_t target[]           = "Ca48";
+    const Int_t dummyRun            = 999999;
+    const Char_t calibDesc[]        = "MC calibration for November 2018 beamtime";
 
     // add raw files to the database
     TCMySQLManager::GetManager()->AddRun(dummyRun, target, calibDesc);

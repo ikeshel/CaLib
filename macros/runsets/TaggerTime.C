@@ -168,8 +168,8 @@ void TaggerTime()
     const Char_t* data = "Data.Tagger.T0";
 
     // configuration
-    const Char_t calibration[] = "LH2_May_18";
-    const Char_t* fLoc = "$HOME/loc/presort/data/May_18";
+    const Char_t calibration[] = "Solid_Nov_18";
+    const Char_t* fLoc = "$HOME/loc/presort/data/Nov_18/adc";
 
     // get number of sets
     Int_t nSets = TCMySQLManager::GetManager()->GetNsets(data, calibration);

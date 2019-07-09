@@ -87,15 +87,15 @@ void PIDEnergy()
     // general configuration
     Bool_t watch = kTRUE;
     const Char_t* data = "Data.PID.E1";
-    const Char_t* hName = "CaLib_PID_dE_E_001";
+    const Char_t* hName = "CaLib_PID_dE_E_004";
     Double_t yMin = 0;
-    Double_t yMax = 2000;
+    Double_t yMax = 4;
     gMin = 500;
     gMax = 1100;
 
     // configuration
-    const Char_t calibration[] = "LH2_May_18";
-    const Char_t* fLoc = "$HOME/loc/presort/data/May_18";
+    const Char_t calibration[] = "Solid_Nov_18";
+    const Char_t* fLoc = "/scratch/werthm/tmp";
 
     // create histogram
     gHOverview = new TH1F("Overview", "Overview", 40000, 0, 40000);
@@ -157,13 +157,19 @@ void PIDEnergy()
             gH3 = (TH3*) gRFile->Get(hName);
             if (!gH3) continue;
             if (!gH3->GetEntries()) continue;
-            if (gH3->GetEntries() < 5000) continue;
+            //if (gH3->GetEntries() < 5000) continue;
 
             // project histogram
-            gH3->GetXaxis()->SetRangeUser(40, 60);
+            gH3->GetZaxis()->SetRangeUser(0, 10);
             sprintf(tmp, "Proj_%d_y", runs[j]);
             gH = (TH1D*) gH3->Project3D(tmp);
             gH->Rebin(2);
+
+            // debug
+            printf("Run: %d Mean: %.1f\n", runs[j], gH->GetMean());
+            gHOverview->SetBinContent(runs[j]+1, gH->GetMean());
+            gHOverview->SetBinError(runs[j]+1, gH->GetMeanError());
+            continue;
 
             // fit the histogram
             Fit(runs[j]);

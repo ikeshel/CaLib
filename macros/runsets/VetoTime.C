@@ -86,17 +86,9 @@ void VetoTime()
     Double_t yMin = -20;
     Double_t yMax = 20;
 
-    // configuration (December 2007)
-    const Char_t calibration[] = "LD2_Dec_07";
-    const Char_t* fLoc = "/usr/puma_scratch0/werthm/A2/Dec_07/AR/out";
-
-    // configuration (February 2009)
-    //const Char_t calibration[] = "LD2_Feb_09";
-    //const Char_t* fLoc = "/usr/panther_scratch0/werthm/A2/Feb_09/AR/out/ADC";
-
-    // configuration (May 2009)
-    //const Char_t calibration[] = "LD2_May_09";
-    //const Char_t* fLoc = "/usr/puma_scratch0/werthm/A2/May_09/AR/out";
+    // configuration
+    const Char_t calibration[] = "Solid_Nov_18";
+    const Char_t* fLoc = "~/loc/presort/data/Nov_18/adc";
 
     // create histogram
     gHOverview = new TH1F("Overview", "Overview", 40000, 0, 40000);
@@ -147,7 +139,7 @@ void VetoTime()
             gRFile = 0;
 
             // load ROOT file
-            sprintf(tmp, "%s/ARHistograms_CB_%d.root", fLoc, runs[j]);
+            sprintf(tmp, "%s/ARHistograms_CBTaggTAPS_%d.root", fLoc, runs[j]);
             gRFile = new TFile(tmp);
 
             // check file

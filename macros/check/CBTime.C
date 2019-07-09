@@ -64,20 +64,9 @@ void CBTime()
     const Char_t* data = "Data.CB.T0";
     const Char_t* hName = "CaLib_CB_Time_Neut";
 
-    // configuration (December 2007)
-    //const Char_t calibration[] = "LD2_Dec_07";
-    //const Char_t filePat[] = "/usr/puma_scratch0/werthm/A2/Dec_07/AR/out/ARHistograms_CB_RUN.root";
-    //const Char_t filePat[] = "/Users/fulgur/Desktop/calib/Dec_07/ARHistograms_CB_RUN.root";
-
-    // configuration (February 2009)
-    //const Char_t calibration[] = "LD2_Feb_09";
-    //const Char_t filePat[] = "/usr/puma_scratch0/werthm/A2/Feb_09/AR/out/ARHistograms_CB_RUN.root";
-    //const Char_t filePat[] = "/Users/fulgur/Desktop/calib/Feb_09/ARHistograms_CB_RUN.root";
-
-    // configuration (May 2009)
-    const Char_t calibration[] = "LD2_May_09";
-    //const Char_t filePat[] = "/usr/puma_scratch0/werthm/A2/May_09/AR/out/ARHistograms_CB_RUN.root";
-    const Char_t filePat[] = "/Users/fulgur/Desktop/calib/May_09/ARHistograms_CB_RUN.root";
+    // configuration
+    const Char_t calibration[] = "Solid_Nov_18";
+    const Char_t filePat[] = "~/loc/presort/data/Nov_18/adc/ARHistograms_CBTaggTAPS_RUN.root";
 
     // get number of sets
     Int_t nSets = TCMySQLManager::GetManager()->GetNsets(data, calibration);

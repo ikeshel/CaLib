@@ -85,14 +85,15 @@ void TAPSEnergy()
     // general configuration
     Bool_t watch = kFALSE;
     const Char_t* data = "Data.TAPS.LG.E1";
-    const Char_t* hName = "CaLib_TAPS_IM_Neut_1CB_1TAPS";
+    //const Char_t* hName = "CaLib_TAPS_IM_Neut_1CB_1TAPS";
     //const Char_t* hName = "CaLib_TAPS_IM_Neut_2TAPS";
+    const Char_t* hName = "CaLib_TAPS_IM_Neut_BG_Subtr";
     Double_t yMin = 110;
     Double_t yMax = 160;
 
     // configuration
-    const Char_t calibration[] = "LH2_May_18";
-    const Char_t* fLoc = "$HOME/loc/presort/data/May_18";
+    const Char_t calibration[] = "Solid_Nov_18";
+    const Char_t* fLoc = "$HOME/loc/presort/data/Nov_18";
 
     // create histogram
     gHOverview = new TH1F("Overview", "Overview", 40000, 0, 40000);

@@ -87,8 +87,8 @@ void CBTime()
     Double_t yMax = 20;
 
     // configuration
-    const Char_t calibration[] = "LH2_May_18";
-    const Char_t* fLoc = "$HOME/loc/presort/data/May_18";
+    const Char_t calibration[] = "Solid_Nov_18";
+    const Char_t* fLoc = "$HOME/loc/presort/data/Nov_18/adc";
 
     // create histogram
     gHOverview = new TH1F("Overview", "Overview", 40000, 0, 40000);

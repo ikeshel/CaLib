@@ -19,11 +19,11 @@ void DisplayValues()
 
     // configuration
     const Int_t nSet = 1;
-    const Int_t nPar = 438;
-    const Char_t data[] = "Data.TAPS.T1";
+    const Int_t nPar = 24;
+    const Char_t data[] = "Data.PID.Phi";
     //const Int_t nPar = 384;
     //const Char_t data[] = "Data.Veto.T1";
-    const Char_t calibration[] = "LD2_Mar_13";
+    const Char_t calibration[] = "Solid_Nov_18";
 
     // data array
     Double_t par[nSet][nPar];

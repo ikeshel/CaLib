@@ -22,7 +22,7 @@ void WriteNScRtoDB()
     // Main method.
 
     // macro configuration (to be adapted by the user)
-    const Char_t* calibration = "Solid_Oct_18";
+    const Char_t* calibration = "LH2_May_18";
 
     // get configuration ///////////////////////////////////////////////////////
 

@@ -18,9 +18,9 @@ void WriteParASCII()
     gSystem->Load("libCaLib.so");
 
     // configuration
-    const Char_t inputFile[] = "tdc_baf2.dat";
-    const Char_t data[] = "Data.TAPS.T1";
-    const Char_t calibration[] = "LH2_Jul_14";
+    const Char_t inputFile[] = "par.dat";
+    const Char_t data[] = "Data.TAPS.CFD";
+    const Char_t calibration[] = "Solid_MC_Nov_18";
     Int_t set = 0;
 
     // par array

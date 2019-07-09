@@ -104,13 +104,14 @@ void CBEnergy()
     // general configuration
     Bool_t watch = kTRUE;
     const Char_t* data = "Data.CB.E1";
-    const Char_t* hName = "CaLib_CB_IM_Neut";
+    //const Char_t* hName = "CaLib_CB_IM_Neut";
+    const Char_t* hName = "CaLib_CB_IM_Neut_BG_Subtr";
     Double_t yMin = 110;
     Double_t yMax = 160;
 
     // configuration
-    const Char_t calibration[] = "LH2_May_18";
-    const Char_t* fLoc = "$HOME/loc/presort/data/May_18";
+    const Char_t calibration[] = "Solid_Nov_18";
+    const Char_t* fLoc = "$HOME/loc/presort/data/Nov_18";
 
     // create histogram
     gHOverview = new TH1F("Overview", "Overview", 40000, 0, 40000);
