@@ -40,7 +40,10 @@ TCCalibVetoEnergy::TCCalibVetoEnergy()
     fPeak = 0;
     fPeakMC = 0;
     fLine = 0;
+    fLineMC = 0;
     fMCHisto = 0;
+    fFitHistoMC = 0;
+    fFitFuncMC = 0;
     fMCFile = 0;
 }
 
@@ -51,7 +54,10 @@ TCCalibVetoEnergy::~TCCalibVetoEnergy()
 
     if (fFileManager) delete fFileManager;
     if (fLine) delete fLine;
+    if (fLineMC) delete fLineMC;
     if (fMCHisto) delete fMCHisto;
+    if (fFitHistoMC) delete fFitHistoMC;
+    if (fFitFuncMC) delete fFitFuncMC;
     if (fMCFile) delete fMCFile;
 }
 
@@ -64,13 +70,16 @@ void TCCalibVetoEnergy::Init()
     fFileManager = new TCFileManager(fData, fCalibration.Data(), fNset, fSet);
     fPeak = 0;
     fPeakMC = 0;
-    fLine =  new TCLine();
+    fLine = new TCLine();
+    fLineMC = new TCLine();
     fMCHisto = 0;
     fMCFile = 0;
 
     // configure line
     fLine->SetLineColor(4);
     fLine->SetLineWidth(3);
+    fLineMC->SetLineColor(4);
+    fLineMC->SetLineWidth(3);
 
     // get histogram name
     if (!TCReadConfig::GetReader()->GetConfig("Veto.Energy.Histo.Fit.Name"))
@@ -89,15 +98,6 @@ void TCCalibVetoEnergy::Init()
     }
     else fileMC = *TCReadConfig::GetReader()->GetConfig("Veto.Energy.MC.File");
 
-    // get MC histogram name
-    TString histoMC;
-    if (!TCReadConfig::GetReader()->GetConfig("Veto.Energy.Histo.MC.Name"))
-    {
-        Error("Init", "MC histogram name was not found in configuration!");
-        return;
-    }
-    else histoMC = *TCReadConfig::GetReader()->GetConfig("Veto.Energy.Histo.MC.Name");
-
     // read old parameters (only from first set)
     TCMySQLManager::GetManager()->ReadParameters(fData, fCalibration.Data(), fSet[0], fOldVal, fNelem);
 
@@ -110,8 +110,7 @@ void TCCalibVetoEnergy::Init()
     fOverviewHisto->SetMarkerColor(4);
 
     // draw main histogram
-    fCanvasFit->Divide(1, 2, 0.001, 0.001);
-    fCanvasFit->cd(1)->SetLogz();
+    fCanvasFit->Divide(2, 2, 0.001, 0.001);
 
     // open the MC file
     fMCFile = new TFile(fileMC.Data());
@@ -126,37 +125,14 @@ void TCCalibVetoEnergy::Init()
         return;
     }
 
-    // load the MC histogram
-    fMCHisto = (TH2*) fMCFile->Get(histoMC.Data());
-    if (!fMCHisto)
-    {
-        Error("Init", "Could not open MC histogram!");
-        return;
-    }
-
-    // draw main histogram
-    fCanvasFit->cd(1);
-    fMCHisto->Draw("colz");
-
     // draw the overview histogram
     fCanvasResult->cd();
     TCUtils::FormatHistogram(fOverviewHisto, "Veto.Energy.Histo.Overview");
     fOverviewHisto->Draw("P");
-
-    // user information
-    Info("Init", "Fitting MC data");
-
-    // perform fitting for the MC histogram
-    FitSlice(fMCHisto, -1);
-    fCanvasFit->Update();
-    gSystem->Sleep(1000);
-
-    // user information
-    Info("Init", "Fitting of MC data finished");
 }
 
 //______________________________________________________________________________
-void TCCalibVetoEnergy::FitSlice(TH2* h, Int_t elem)
+void TCCalibVetoEnergy::FitSlice(TH2* h, Int_t elem, Bool_t isMC)
 {
     // Fit the energy slice of the dE vs E histogram 'h' of the element 'elem'.
 
@@ -165,65 +141,103 @@ void TCCalibVetoEnergy::FitSlice(TH2* h, Int_t elem)
     // get configuration
     Double_t lowLimit, highLimit;
     TCReadConfig::GetReader()->GetConfigDoubleDouble("Veto.Energy.Fit.Range", &lowLimit, &highLimit);
-
-    // create projection
-    sprintf(tmp, "Proj_%d", elem);
     Int_t firstBin = h->GetXaxis()->FindBin(lowLimit);
     Int_t lastBin = h->GetXaxis()->FindBin(highLimit);
-    if (fFitHisto) delete fFitHisto;
-    fFitHisto = (TH1D*) h->ProjectionY(tmp, firstBin, lastBin, "e");
-    if (h != fMCHisto) TCUtils::FormatHistogram(fFitHisto, "Veto.Energy.Histo.Fit");
 
-    // create fitting function
-    if (fFitFunc) delete fFitFunc;
-    sprintf(tmp, "fFunc_%d", elem);
-    fFitFunc = new TF1(tmp, "expo(0)+gaus(2)");
-    fFitFunc->SetLineColor(2);
+    // create projection
+    TH1* fitHisto;
+    if (isMC)
+    {
+        sprintf(tmp, "Proj_MC_%d", elem);
+        if (fFitHistoMC) delete fFitHistoMC;
+        fFitHistoMC = (TH1D*) h->ProjectionY(tmp, firstBin, lastBin, "e");
+        fitHisto = fFitHistoMC;
+    }
+    else
+    {
+        sprintf(tmp, "Proj_%d", elem);
+        if (fFitHisto) delete fFitHisto;
+        fFitHisto = (TH1D*) h->ProjectionY(tmp, firstBin, lastBin, "e");
+        fitHisto = fFitHisto;
+    }
 
     // estimate peak position
     TSpectrum s;
-    if (h == fMCHisto) s.Search(fFitHisto, 5, "goff nobackground", 0.03);
-    else s.Search(fFitHisto, 5, "goff nobackground", 0.05);
-    fPeak = TMath::MaxElement(s.GetNPeaks(), s.GetPositionX());
+    if (isMC) s.Search(fitHisto, 5, "goff nobackground", 0.03);
+    else s.Search(fitHisto, 5, "goff nobackground", 0.05);
+    Double_t peak = TMath::MaxElement(s.GetNPeaks(), s.GetPositionX());
+
+    // create fitting function
+    TF1* fitfunc;
+    if (isMC)
+    {
+        if (fFitFuncMC) delete fFitFuncMC;
+        sprintf(tmp, "fFunc_MC_%s", h->GetName());
+        fFitFuncMC = new TF1(tmp, "expo(0)+gaus(2)");
+        fFitFuncMC->SetLineColor(2);
+        fitfunc = fFitFuncMC;
+    }
+    else
+    {
+        if (fFitFunc) delete fFitFunc;
+        sprintf(tmp, "fFunc_%s", h->GetName());
+        fFitFunc = new TF1(tmp, "expo(0)+gaus(2)");
+        fFitFunc->SetLineColor(2);
+        fitfunc = fFitFunc;
+    }
 
     // apply re-fit
-    if (fIsReFit) fPeak = fLine->GetPos();
+    if (fIsReFit)
+    {
+        if (isMC)
+            peak = fLineMC->GetPos();
+        else
+            peak = fLine->GetPos();
+    }
 
     // prepare fitting function
     Double_t range = 30./lowLimit+0.3;
     Double_t peak_range = 0.2;
-    fFitFunc->SetRange(fPeak - range, fPeak + range*2);
-    fFitFunc->SetParameter(2, fFitHisto->GetXaxis()->FindBin(fPeak));
-    fFitFunc->SetParLimits(2, 0, 100000);
-    fFitFunc->SetParameter(3, fPeak);
-    fFitFunc->SetParLimits(3, fPeak - peak_range, fPeak + peak_range);
-    fFitFunc->SetParameter(4, 1);
-    fFitFunc->SetParLimits(4, 0.1, 10);
+    fitfunc->SetRange(peak - range, peak + range*2);
+    fitfunc->SetParameter(2, fitHisto->GetXaxis()->FindBin(peak));
+    fitfunc->SetParLimits(2, 0, 100000);
+    fitfunc->SetParameter(3, peak);
+    fitfunc->SetParLimits(3, peak - peak_range, peak + peak_range);
+    fitfunc->SetParameter(4, 1);
+    fitfunc->SetParLimits(4, 0.1, 10);
 
     // perform first fit
-    fFitHisto->Fit(fFitFunc, "RB0Q");
+    fitHisto->Fit(fitfunc, "RB0Q");
 
     // adjust fitting range
-    Double_t sigma = fFitFunc->GetParameter(4);
-    fFitFunc->SetRange(fPeak - 3*sigma, fPeak + range+3*sigma);
+    Double_t sigma = fitfunc->GetParameter(4);
+    fitfunc->SetRange(peak - 3*sigma, peak + range+3*sigma);
 
     // perform second fit
-    fFitHisto->Fit(fFitFunc, "RB0Q");
+    fitHisto->Fit(fitfunc, "RB0Q");
 
-    // get peak
-    fPeak = fFitFunc->GetParameter(3);
+    // format and plot stuff
+    if (isMC)
+    {
+        fPeakMC = fitfunc->GetParameter(3);
+        fLineMC->SetPos(fPeakMC);
+        fCanvasFit->cd(2);
+    }
+    else
+    {
+        fPeak = fitfunc->GetParameter(3);
+        fLine->SetPos(fPeak);
+        fCanvasFit->cd(4);
+    }
 
-    // format line
-    fLine->SetPos(fPeak);
+    // draw histogram
+    fitHisto->Draw("hist");
+    fitfunc->Draw("same");
+    if (isMC)
+        fLineMC->Draw();
+    else
+        fLine->Draw();
 
-    // save peak position
-    if (h == fMCHisto) fPeakMC = fPeak;
-
-    fCanvasFit->cd(2);
-    fFitHisto->GetXaxis()->SetRangeUser(fPeak*0.4, fPeak*1.6);
-    fFitHisto->Draw("hist");
-    fFitFunc->Draw("same");
-    fLine->Draw();
     fCanvasFit->Update();
 }
 
@@ -237,38 +251,46 @@ void TCCalibVetoEnergy::Fit(Int_t elem)
     // create histogram name
     sprintf(tmp, "%s_%03d", fHistoName.Data(), elem);
 
-    // delete old histogram
-    if (fMainHisto) delete fMainHisto;
-
     // get histogram
+    if (fMainHisto) delete fMainHisto;
     fMainHisto = (TH2*) fFileManager->GetHistogram(tmp);
     if (!fMainHisto)
     {
         Error("Init", "Main histogram does not exist!\n");
         return;
     }
+    fMainHisto->SetTitle(TString::Format("%s (data)", fMainHisto->GetTitle()).Data());
+
+    // get MC histogram
+    if (fMCHisto) delete fMCHisto;
+    fMCHisto = (TH2*) fMCFile->Get(tmp);
+    if (!fMCHisto)
+    {
+        Error("Init", "MC histogram does not exist!\n");
+        return;
+    }
+    fMCHisto->SetTitle(TString::Format("%s (MC)", fMCHisto->GetTitle()).Data());
 
     // draw main histogram
-    fCanvasFit->cd(1);
+    fCanvasFit->cd(3)->SetLogz();
     TCUtils::FormatHistogram(fMainHisto, "Veto.Energy.Histo.Fit");
     fMainHisto->Draw("colz");
+    fCanvasFit->cd(1)->SetLogz();
+    TCUtils::FormatHistogram(fMCHisto, "Veto.Energy.Histo.Fit");
+    fMCHisto->Draw("colz");
     fCanvasFit->Update();
 
     // check for sufficient statistics
     if (fMainHisto->GetEntries())
     {
         // fit the energy slice
-        FitSlice((TH2*)fMainHisto, elem);
+        FitSlice((TH2*)fMCHisto, elem, kTRUE);
+        FitSlice((TH2*)fMainHisto, elem, kFALSE);
+    }
 
-        // update overview
-        if (elem % 20 == 0)
-        {
-            fCanvasResult->cd();
-            fOverviewHisto->Draw("E1");
-            fCanvasResult->Update();
-        }
-
-    } // if: sufficient statistics
+    fCanvasResult->cd();
+    fOverviewHisto->Draw("E1");
+    fCanvasResult->Update();
 }
 
 //______________________________________________________________________________
@@ -283,6 +305,7 @@ void TCCalibVetoEnergy::Calculate(Int_t elem)
     {
         // check if line position was modified by hand
         if (fLine->GetPos() != fPeak) fPeak = fLine->GetPos();
+        if (fLineMC->GetPos() != fPeakMC) fPeakMC = fLineMC->GetPos();
 
         // calculate the new gain
         fNewVal[elem] = fOldVal[elem] * (fPeakMC / fPeak);
@@ -306,9 +329,9 @@ void TCCalibVetoEnergy::Calculate(Int_t elem)
     }
 
     // user information
-    printf("Element: %03d    peak: %12.8f    "
+    printf("Element: %03d    peak: %.3f    peak MC: %.3f"
            "old gain: %12.8f    new gain: %12.8f    diff: %6.2f %%",
-           elem, fPeak, fOldVal[elem], fNewVal[elem],
+           elem, fPeak, fPeakMC, fOldVal[elem], fNewVal[elem],
            TCUtils::GetDiffPercent(fOldVal[elem], fNewVal[elem]));
     if (unchanged) printf("    -> unchanged");
     printf("\n");
