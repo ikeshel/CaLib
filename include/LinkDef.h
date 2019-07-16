@@ -85,6 +85,7 @@
 #pragma link C++ class TCCalibCBRiseTime+;
 #pragma link C++ class TCCalibCBTimeWalk+;
 #pragma link C++ class TCCalibCBLED+;
+#pragma link C++ class TCCalibCBThresh+;
 
 // TAPS calibration classes
 #pragma link C++ class TCCalibTAPSEnergyLG+;
@@ -105,6 +106,7 @@
 #pragma link C++ class TCCalibPIDEnergy+;
 #pragma link C++ class TCCalibPIDEnergyTrad+;
 #pragma link C++ class TCCalibPIDTime+;
+#pragma link C++ class TCCalibPIDThresh+;
 
 // Veto calibration classes
 #pragma link C++ class TCCalibVetoCorr+;

@@ -12,7 +12,6 @@
 
 
 #include "TH2.h"
-#include "TLine.h"
 #include "TCanvas.h"
 #include "TF1.h"
 #include "TList.h"
@@ -22,6 +21,7 @@
 #include "TCMySQLManager.h"
 #include "TCUtils.h"
 #include "TCReadARCalib.h"
+#include "TCLine.h"
 
 ClassImp(TCCalibDiscrThr)
 
@@ -74,7 +74,7 @@ void TCCalibDiscrThr::Init()
     fThr = new Double_t[fNelem];
     for (Int_t i = 0; i < fNelem; i++)
         fThr[i] = 0;
-    fLine = new TLine();
+    fLine = new TCLine();
 
     // configure line
     fLine->SetLineColor(4);
@@ -222,12 +222,14 @@ void TCCalibDiscrThr::Fit(Int_t elem)
     // check for histo and sufficient statistics
     if (fFitHisto)
     {
-        if (fFitHisto->GetEntries())
+        if (fFitHisto->GetEntries() && !IsIgnored(elem))
         {
             // derive histogram
             if (fDeriv) delete fDeriv;
             fDeriv = TCUtils::DeriveHistogram(fFitHisto);
             TCUtils::ZeroBins(fDeriv);
+            fDeriv->SetBinContent(10, 0);   // NaI
+            fDeriv->SetBinError(10, 0);     // NaI
 
             // clean-up
             if (fFitFunc)
@@ -253,52 +255,76 @@ void TCCalibDiscrThr::Fit(Int_t elem)
             }
             else
             {
-                // exclude pedestal
-                if (fPed)
+                // check for fit mode
+                sprintf(tmp, "%s.Fit.Threshold.Level", GetName());
+                Double_t level = TCReadConfig::GetReader()->GetConfigDouble(tmp);
+                if (level != 0)
                 {
-                    Int_t lastBin = fDeriv->GetXaxis()->GetLast();
-                    fDeriv->GetXaxis()->SetRangeUser(fPed[elem]+7, fDeriv->GetXaxis()->GetBinCenter(lastBin));
-                    sprintf(tmp, "%s.Histo.Fit", GetName());
-                    TCUtils::FormatHistogram(fFitHisto, tmp);
+                    // find threshold
+                    for (Int_t i = fFitHisto->GetXaxis()->GetFirst(); i < fFitHisto->GetXaxis()->GetLast(); i++)
+                    {
+                        Double_t x1 = fFitHisto->GetBinCenter(i);
+                        Double_t x2 = fFitHisto->GetBinCenter(i+1);
+                        Double_t y1 = fFitHisto->GetBinContent(i);
+                        Double_t y2 = fFitHisto->GetBinContent(i+1);
+                        Double_t m = (y2 - y1) / (x2 - x1);
+                        Double_t b = (x2*y1 - x1*y2) / (x2 - x1);
+                        Double_t xl = (level - b) / m;
+                        fThr[elem] = xl;
+                        if (xl > x1 && xl < x2)
+                            break;
+                    }
                 }
+                else
+                {
+                    // exclude pedestal
+                    if (fPed)
+                    {
+                        Int_t lastBin = fDeriv->GetXaxis()->GetLast();
+                        fDeriv->GetXaxis()->SetRangeUser(fPed[elem]+7, fDeriv->GetXaxis()->GetBinCenter(lastBin));
+                        //fDeriv->GetXaxis()->SetRangeUser(110, fDeriv->GetXaxis()->GetBinCenter(lastBin));
+                        sprintf(tmp, "%s.Histo.Fit", GetName());
+                        TCUtils::FormatHistogram(fFitHisto, tmp);
+                    }
 
-                // get maximum
-                fThr[elem] = fDeriv->GetBinCenter(fDeriv->GetMaximumBin());
+                    // set initial peak position
+                    if (fIsReFit)
+                        fThr[elem] = fLine->GetPos();
+                    else
+                        fThr[elem] = fDeriv->GetBinCenter(fDeriv->GetMaximumBin());
 
-                // create fitting function
-                sprintf(tmp, "Fitfunc_%d", elem);
-                fFitFunc = new TF1(tmp, "gaus", fThr[elem]-8, fThr[elem]+8);
-                fFitFunc->SetLineColor(kRed);
-                fFitFunc->SetParameters(fDeriv->GetMaximum(), fThr[elem], 1);
+                    // create fitting function
+                    sprintf(tmp, "Fitfunc_%d", elem);
+                    fFitFunc = new TF1(tmp, "gaus", fThr[elem]-8, fThr[elem]+8);
+                    fFitFunc->SetLineColor(kRed);
+                    fFitFunc->SetParameters(fDeriv->GetMaximum(), fThr[elem], 1);
 
-                // fit
-                fDeriv->Fit(fFitFunc, "RBQ0");
-                fThr[elem] = fFitFunc->GetParameter(1);
+                    // fit
+                    fDeriv->Fit(fFitFunc, "RBQ0");
+                    fThr[elem] = fFitFunc->GetParameter(1);
 
-                // correct bad position
-                if (fThr[elem] < fDeriv->GetXaxis()->GetXmin() || fThr[elem] > fDeriv->GetXaxis()->GetXmax())
-                    fThr[elem] = 0.5 * (fDeriv->GetXaxis()->GetXmin() + fDeriv->GetXaxis()->GetXmax());
+                    // correct bad position
+                    if (fThr[elem] < fDeriv->GetXaxis()->GetXmin() || fThr[elem] > fDeriv->GetXaxis()->GetXmax())
+                        fThr[elem] = 0.5 * (fDeriv->GetXaxis()->GetXmin() + fDeriv->GetXaxis()->GetXmax());
+
+                    // draw histogram
+                    fCanvasFit->cd(2);
+                    if (fPed)
+                        fDeriv->GetXaxis()->SetRangeUser(fThr[elem]-7, fThr[elem]+7);
+                    else
+                        fDeriv->GetXaxis()->SetRangeUser(fThr[elem]-20, fThr[elem]+20);
+                    fDeriv->Draw("hist");
+
+                    // draw function
+                    if (fFitFunc) fFitFunc->Draw("same");
+                }
             }
-
-            // draw histogram
-            fCanvasFit->cd(2);
-            if (fPed)
-                fDeriv->GetXaxis()->SetRangeUser(fThr[elem]-7, fThr[elem]+7);
-            else
-                fDeriv->GetXaxis()->SetRangeUser(fThr[elem]-20, fThr[elem]+20);
-            fDeriv->Draw("hist");
-
-            // draw function
-            if (fFitFunc) fFitFunc->Draw("same");
 
             // draw indicator line
             fLine->Draw();
 
             // draw mean indicator line
-            fLine->SetY1(0);
-            fLine->SetY2(fFitHisto->GetMaximum() + 20);
-            fLine->SetX1(fThr[elem]);
-            fLine->SetX2(fThr[elem]);
+            fLine->SetPos(fThr[elem]);
 
             // draw histogram
             fFitHisto->SetFillColor(35);
@@ -333,10 +359,10 @@ void TCCalibDiscrThr::Calculate(Int_t elem)
     // check if fit was performed
     if (fFitHisto)
     {
-        if (fFitHisto->GetEntries())
+        if (fFitHisto->GetEntries() && !IsIgnored(elem))
         {
             // check if line position was modified by hand
-            if (fLine->GetX1() != fThr[elem]) fThr[elem] = fLine->GetX1();
+            if (fLine->GetPos() != fThr[elem]) fThr[elem] = fLine->GetPos();
 
             // calculate the new threshold
             if (fADC)

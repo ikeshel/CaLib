@@ -19,7 +19,7 @@
 #include "TCReadConfig.h"
 
 class TH2;
-class TLine;
+class TCLine;
 class TCFileManager;
 
 class TCCalibDiscrThr : public TCCalib
@@ -33,7 +33,7 @@ private:
     TH2* fMainHisto2;                   // normalization histogram
     TH1* fDeriv;                        // derived histogram
     Double_t* fThr;                     // threshold value
-    TLine* fLine;                       // mean indicator line
+    TCLine* fLine;                      // mean indicator line
 
     virtual void Init();
     virtual void Fit(Int_t elem);
@@ -116,6 +116,40 @@ public:
     virtual ~TCCalibVetoLED() { }
 
     ClassDef(TCCalibVetoLED, 0) // Veto LED calibration
+};
+
+class TCCalibCBThresh : public TCCalibDiscrThr
+{
+
+public:
+    TCCalibCBThresh()
+        : TCCalibDiscrThr("CB.Threshold", "CB detector threshold calibration",
+                          "Data.CB.T0", TCConfig::kMaxCB) { }
+    virtual ~TCCalibCBThresh() { }
+
+    virtual void WriteValues()
+    {
+        Error("TCCalibCBThresh", "Nothing will be written to DB with this module!");
+    }
+
+    ClassDef(TCCalibCBThresh, 0) // CB threshold calibration
+};
+
+class TCCalibPIDThresh : public TCCalibDiscrThr
+{
+
+public:
+    TCCalibPIDThresh()
+        : TCCalibDiscrThr("PID.Threshold", "PID detector threshold calibration",
+                          "Data.PID.T0", TCConfig::kMaxPID) { }
+    virtual ~TCCalibPIDThresh() { }
+
+    virtual void WriteValues()
+    {
+        Error("TCCalibPIDThresh", "Nothing will be written to DB with this module!");
+    }
+
+    ClassDef(TCCalibPIDThresh, 0) // PID threshold calibration
 };
 
 #endif
