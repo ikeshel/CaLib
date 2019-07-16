@@ -151,7 +151,7 @@ void TCCalibDeltaETrad::Init()
     memcpy(fGainNew, fGainOld, fNelem * sizeof(Double_t));
 
     // draw main histogram
-    fCanvasFit->Divide(1, 2, 0.001, 0.001);
+    fCanvasFit->Divide(2, 2, 0.001, 0.001);
 
     // open the MC file
     fMCFile = new TFile(fileMC.Data());
@@ -294,6 +294,12 @@ void TCCalibDeltaETrad::FitSlice(TH2* h, Bool_t isMC)
         fitHisto = fFitHisto;
     }
 
+    // rebin histogram
+    sprintf(tmp, "%s.Histo.Fit.Rebin", GetName());
+    Int_t rebin = TCReadConfig::GetReader()->GetConfigInt(tmp);
+    if (rebin)
+        fitHisto->Rebin(rebin);
+
     // look for peaks
     TSpectrum s;
     s.Search(fitHisto, 10, "goff nobackground", 0.05);
@@ -381,7 +387,7 @@ void TCCalibDeltaETrad::FitSlice(TH2* h, Bool_t isMC)
         fProtonMC = protonPos;
         fLinePionMC->SetPos(pionPos);
         fLineProtMC->SetPos(protonPos);
-        fCanvasFit->cd(1);
+        fCanvasFit->cd(2);
     }
     else
     {
@@ -389,7 +395,7 @@ void TCCalibDeltaETrad::FitSlice(TH2* h, Bool_t isMC)
         fProtonData = protonPos;
         fLinePion->SetPos(pionPos);
         fLineProt->SetPos(protonPos);
-        fCanvasFit->cd(2);
+        fCanvasFit->cd(4);
     }
 
     // draw histogram
@@ -483,6 +489,16 @@ void TCCalibDeltaETrad::Fit(Int_t elem)
         return;
     }
 
+    // draw main histogram
+    fCanvasFit->cd(3)->SetLogz();
+    sprintf(tmp, "%s.Histo.Fit", GetName());
+    TCUtils::FormatHistogram(fMainHisto, tmp);
+    fMainHisto->Draw("colz");
+    fCanvasFit->cd(1)->SetLogz();
+    TCUtils::FormatHistogram(fMainHistoMC, tmp);
+    fMainHistoMC->Draw("colz");
+    fCanvasFit->Update();
+
     // check for sufficient statistics
     if (fMainHisto->GetEntries())
     {
@@ -535,7 +551,7 @@ void TCCalibDeltaETrad::Calculate(Int_t elem)
     }
 
     // user information
-    printf("Element: %03d    Pion: %.2f (MC: %.2f)   Proton: %.2f (MC: %.2f)   Pedestal: %12.8f (%+2.1f)  Gain: %12.8f (%+2.1f)",
+    printf("Element: %03d    Pion: %.2f (MC: %.2f)   Proton: %.2f (MC: %.2f)   Pedestal: %12.8f (%2.1f%%)  Gain: %12.8f (%2.1f%%)",
            elem, fPionData, fPionMC, fProtonData, fProtonMC,
            fPedNew[elem], TCUtils::GetDiffPercent(fPedOld[elem], fPedNew[elem]),
            fGainNew[elem], TCUtils::GetDiffPercent(fGainOld[elem], fGainNew[elem]));

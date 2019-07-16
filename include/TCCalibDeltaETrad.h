@@ -87,6 +87,18 @@ public:
     ClassDef(TCCalibPIDEnergyTrad, 0) // PID energy calibration class
 };
 
+class TCCalibVetoEnergyTrad : public TCCalibDeltaETrad
+{
+
+public:
+    TCCalibVetoEnergyTrad()
+        : TCCalibDeltaETrad("Veto.Energy.Trad", "Veto energy calibration (traditional)",
+                            "Data.Veto.E1", TCConfig::kMaxVeto) { }
+    virtual ~TCCalibVetoEnergyTrad() { }
+
+    ClassDef(TCCalibVetoEnergyTrad, 0) // Veto energy calibration class
+};
+
 class TCCalibPizzaEnergyTrad : public TCCalibDeltaETrad
 {
 
