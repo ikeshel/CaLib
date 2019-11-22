@@ -17,21 +17,18 @@
 #include "TCCalib.h"
 #include "TCConfig.h"
 
-class TCLine;
-
 class TCCalibPeakFit : public TCCalib
 {
 
 private:
     Double_t fMean;                     // mean time position
-    TCLine* fLine;                      // indicator line
 
     virtual void Init();
     virtual void Fit(Int_t elem);
     virtual void Calculate(Int_t elem);
 
 public:
-    TCCalibPeakFit() : TCCalib(), fMean(0), fLine(0) { }
+    TCCalibPeakFit() : TCCalib(), fMean(0) { }
     TCCalibPeakFit(const Char_t* name, const Char_t* title, const Char_t* data,
                    Int_t nElem);
     virtual ~TCCalibPeakFit();

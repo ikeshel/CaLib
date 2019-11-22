@@ -32,7 +32,6 @@ TCCalibPeakFit::TCCalibPeakFit(const Char_t* name, const Char_t* title, const Ch
 
     // init members
     fMean = 0;
-    fLine = 0;
 }
 
 //______________________________________________________________________________
@@ -40,7 +39,6 @@ TCCalibPeakFit::~TCCalibPeakFit()
 {
     // Destructor.
 
-    if (fLine) delete fLine;
 }
 
 //______________________________________________________________________________
