@@ -19,6 +19,7 @@
 class TH1;
 class TF1;
 class TCanvas;
+class TCLine;
 
 class TCCalib : public TNamed
 {
@@ -41,6 +42,7 @@ protected:
     TH1* fMainHisto;                // main histogram
     TH1* fFitHisto;                 // fitting histogram
     TF1* fFitFunc;                  // fitting function
+    TCLine* fLine;                  // indicator line
 
     TH1* fOverviewHisto;            // overview result histogram
 
@@ -71,6 +73,7 @@ public:
                 fAvr(0), fAvrDiff(0), fNcalc(0),
                 fConvergenceFactor(1),
                 fMainHisto(0), fFitHisto(0), fFitFunc(0),
+                fLine(0),
                 fOverviewHisto(0),
                 fCanvasFit(0), fCanvasResult(0),
                 fTimer(0), fTimerRunning(kFALSE),
@@ -86,6 +89,7 @@ public:
           fOldVal(0), fNewVal(0),
           fAvr(0), fAvrDiff(0), fNcalc(0),
           fMainHisto(0), fFitHisto(0), fFitFunc(0),
+          fLine(0),
           fOverviewHisto(0),
           fCanvasFit(0), fCanvasResult(0),
           fTimer(0), fTimerRunning(kFALSE),

@@ -27,6 +27,7 @@
 #include "TCUtils.h"
 #include "TCMySQLManager.h"
 #include "TCReadConfig.h"
+#include "TCLine.h"
 
 
 ClassImp(TCCalib)
@@ -42,6 +43,7 @@ TCCalib::~TCCalib()
     if (fMainHisto) delete fMainHisto;
     if (fFitHisto) delete fFitHisto;
     if (fFitFunc) delete fFitFunc;
+    if (fLine) delete fLine;
     if (fOverviewHisto) delete fOverviewHisto;
     //if (fCanvasFit) delete fCanvasFit;            // comment this to prevent crash
     //if (fCanvasResult) delete fCanvasResult;      // comment this to prevent crash
@@ -66,6 +68,7 @@ void TCCalib::Start(const Char_t* calibration, Int_t nSet, Int_t* set)
     fMainHisto = 0;
     fFitHisto = 0;
     fFitFunc = 0;
+    fLine = 0;
 
     fOverviewHisto = 0;
 
@@ -192,6 +195,17 @@ void TCCalib::EventHandler(Int_t event, Int_t ox, Int_t oy, TObject* selected)
                 fTimer->Start();
                 fTimerRunning = kTRUE;
             }
+        }
+    }
+
+    // catch mouse events
+    if (event == kButton1Double)
+    {
+        if (fLine)
+        {
+            Float_t pos = gPad->PadtoX(gPad->AbsPixeltoX(gPad->GetEventX()));
+            fLine->SetPos(pos);
+            fLine->Paint(0);
         }
     }
 }
