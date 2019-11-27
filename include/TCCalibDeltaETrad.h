@@ -16,6 +16,7 @@
 
 #include "TCCalib.h"
 #include "TCConfig.h"
+#include "TCReadConfig.h"
 
 class TCLine;
 class TH2;
@@ -93,7 +94,7 @@ class TCCalibVetoEnergyTrad : public TCCalibDeltaETrad
 public:
     TCCalibVetoEnergyTrad()
         : TCCalibDeltaETrad("Veto.Energy.Trad", "Veto energy calibration (traditional)",
-                            "Data.Veto.E1", TCConfig::kMaxVeto) { }
+                            "Data.Veto.E1", TCReadConfig::GetReader()->GetConfigInt("Veto.Elements")) { }
     virtual ~TCCalibVetoEnergyTrad() { }
 
     ClassDef(TCCalibVetoEnergyTrad, 0) // Veto energy calibration class
