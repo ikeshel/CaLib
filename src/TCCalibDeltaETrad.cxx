@@ -351,9 +351,9 @@ void TCCalibDeltaETrad::FitSlice(TH2* h, Bool_t isMC)
                            10, protonPos, 0.4);
     fitfunc->SetParLimits(2, 0, 1e6);
     fitfunc->SetParLimits(3, 0.85*pionPos, 1.15*pionPos);
-    fitfunc->SetParLimits(4, 10, 1e6);
+    fitfunc->SetParLimits(4, 10, 1e9);
     fitfunc->SetParLimits(5, 0.1, 2);
-    fitfunc->SetParLimits(6, 0, 1e5);
+    fitfunc->SetParLimits(6, 0, 1e6);
     fitfunc->SetParLimits(7, 0.85*protonPos, 1.15*protonPos);
     fitfunc->SetParLimits(8, 0.1, 2);
 
